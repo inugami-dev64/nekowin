@@ -33,8 +33,8 @@ struct shaders {
 
 static GLfloat vertices[] = {
 //  X     Y     Z     A           R     G     B     A
-   -1.0f, 1.0f, 0.0f, 1.0f,       1.0f, 0.0f, 0.0f, 1.0f, // vertex 0
-  1.0f, 1.0f, 0.0f, 1.0f,       0.0f, 1.0f, 0.0f, 1.0f, // vertex 1
+  -1.0f, 1.0f, 0.0f, 1.0f,       1.0f, 0.0f, 0.0f, 1.0f, // vertex 0
+   1.0f, 1.0f, 0.0f, 1.0f,       0.0f, 1.0f, 0.0f, 1.0f, // vertex 1
    1.0f,-1.0f, 0.0f, 1.0f,       0.0f, 0.0f, 1.0f, 1.0f, // vertex 2
   -1.0f,-1.0f, 0.0f, 1.0f,       1.0f, 0.0f, 0.0f, 1.0f, // vertex 3
 }; // 4 vertices with 6 components (floats) each
@@ -177,10 +177,15 @@ void err_check(const std::string &func_name) {
 void run(neko::Window &win) {
     while(neko_IsRunning()) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        err_check("glClearColor");
         glClear(GL_COLOR_BUFFER_BIT);
+        err_check("glClear");
         glUseProgram(sh_program);
+        err_check("glUseProgram");
         glBindVertexArray(vao);
+        err_check("glBindVertexArray");
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        err_check("glDrawElements");
         win.update();
 
         // Check for any errors during the frame generation
@@ -208,7 +213,7 @@ int main() {
 
     
     // Create a new window
-    neko::Window win(width, height, NEKO_HINT_API_OPENGL, "GLtest");
+    neko::Window win(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_FULL_SCREEN, "GLtest");
 
     int status = gladLoadGL();
     if(!status) {

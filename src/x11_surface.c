@@ -7,23 +7,6 @@
 #include <surface_window.h>
 
 // Static X11 exclusive functions
-static void __neko_XInitCursors(neko_Window *p_win);
-static void __neko_XFreeCursors(neko_Window *p_win);
-static void __neko_XHandleKeyEvents(); 
-static void __neko_XHandleMouseEvents(); 
-static void __neko_XHandleResize(neko_Window *p_win);
-static void __neko_XSetCursor (
-    neko_Window *p_win,
-    bool hide
-);
-
-
-static void __neko_CreateVkWindow(neko_Window *p_win);
-static void __neko_CreateGlWindow(neko_Window *p_win);
-static XSizeHints __neko_SetSizeHints(neko_Window *p_win);
-static Atom __atom_kill;
-static Cursor __hidden_cur;
-static Cursor __default_cur;
 
 
 neko_Window *neko_InitSurfaceWindow (
@@ -52,12 +35,12 @@ neko_Window *neko_InitSurfaceWindow (
     // Check the requested API and create a window instance accordingly
     if(hints & NEKO_HINT_API_VULKAN) {
         win.is_opengl = false;
-        __neko_CreateVkWindow(&win);
+        _neko_CreateVkWindow(&win);
     }
     
     else if(hints & NEKO_HINT_API_OPENGL) {
         win.is_opengl = true;
-        __neko_CreateGlWindow(&win);
+        _neko_CreateGlWindow(&win);
     }
 
     return &win;
@@ -65,7 +48,7 @@ neko_Window *neko_InitSurfaceWindow (
 
 
 /// Create a simple X window to act as a Vulkan surface
-static void __neko_CreateVkWindow(neko_Window *p_win) {
+static void _neko_CreateVkWindow(neko_Window *p_win) {
     p_win->x11_handler.window = XCreateSimpleWindow(p_win->x11_handler.p_display, DefaultRootWindow(p_win->x11_handler.p_display), 
         0, 0, p_win->width, p_win->height, __NEKO_DEFAULT_WINDOW_BORDER, WhitePixel(p_win->x11_handler.p_display, p_win->x11_handler.screen), 
         BlackPixel(p_win->x11_handler.p_display, p_win->x11_handler.screen));
@@ -74,13 +57,11 @@ static void __neko_CreateVkWindow(neko_Window *p_win) {
     XSetStandardProperties(p_win->x11_handler.p_display, p_win->x11_handler.window, p_win->window_title, 
         p_win->window_title, None, NULL, 0, NULL);
 
-    // Set the window manager size hints
-    XSizeHints hints = __neko_SetSizeHints(p_win);
-    XSetWMNormalHints(p_win->x11_handler.p_display, p_win->x11_handler.window, &hints);
-
     XSelectInput(p_win->x11_handler.p_display, p_win->x11_handler.window, EVENT_MASKS);
     p_win->x11_handler.gc = XCreateGC(p_win->x11_handler.p_display, 
                                       p_win->x11_handler.window, 0, 0);
+
+    _neko_ApplySizeHints(p_win);
 
     XSetBackground(p_win->x11_handler.p_display, p_win->x11_handler.gc, 
         BlackPixel(p_win->x11_handler.p_display, p_win->x11_handler.screen));
@@ -100,13 +81,14 @@ static void __neko_CreateVkWindow(neko_Window *p_win) {
 
     __is_running = true;
 
-    __atom_kill = XInternAtom(p_win->x11_handler.p_display, "WM_DELETE_WINDOW", True);
-    XSetWMProtocols(p_win->x11_handler.p_display, p_win->x11_handler.window, &__atom_kill, True);
-    __neko_XInitCursors(p_win);
+    Atom *WM_DELETE_WINDOW = &p_win->x11_handler.atoms.WM_DELETE_WINDOW;
+    *WM_DELETE_WINDOW = XInternAtom(p_win->x11_handler.p_display, "WM_DELETE_WINDOW", True);
+    XSetWMProtocols(p_win->x11_handler.p_display, p_win->x11_handler.window, WM_DELETE_WINDOW, True);
+    /*_neko_XInitCursors(p_win);*/
 }
 
 
-static void __neko_CreateGlWindow(neko_Window *p_win) {
+static void _neko_CreateGlWindow(neko_Window *p_win) {
     // Array of OpenGL attributes
     GLint attributes[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
     p_win->x11_handler.vi = glXChooseVisual(p_win->x11_handler.p_display, 0, attributes);
@@ -123,68 +105,97 @@ static void __neko_CreateGlWindow(neko_Window *p_win) {
     XMapWindow(p_win->x11_handler.p_display, p_win->x11_handler.window);
     XStoreName(p_win->x11_handler.p_display, p_win->x11_handler.window, p_win->window_title);
 
-    // Apply all given size hints
-    XSizeHints s_hints = __neko_SetSizeHints(p_win);
-    XSetWMNormalHints(p_win->x11_handler.p_display, p_win->x11_handler.window, &s_hints);
-
     GLXContext glc = glXCreateContext(p_win->x11_handler.p_display, p_win->x11_handler.vi, NULL, GL_TRUE);
     glXMakeCurrent(p_win->x11_handler.p_display, p_win->x11_handler.window, glc);
+
+
+    // Apply all given size hints
+    _neko_ApplySizeHints(p_win);
+
     // glEnable(GL_DEPTH_TEST);
 
     __is_running = true;
-    __atom_kill = XInternAtom(p_win->x11_handler.p_display, "WM_DELETE_WINDOW", True);
-    XSetWMProtocols(p_win->x11_handler.p_display, p_win->x11_handler.window, &__atom_kill, True);
-    __neko_XInitCursors(p_win);
+
+    p_win->x11_handler.atoms.WM_DELETE_WINDOW = XInternAtom(p_win->x11_handler.p_display, "WM_DELETE_WINDOW", True);
+    XSetWMProtocols(p_win->x11_handler.p_display, p_win->x11_handler.window, &p_win->x11_handler.atoms.WM_DELETE_WINDOW, 1);
+    /*_neko_XInitCursors(p_win);*/
 }
 
 
 /// Set size hints according to the specified window mode
-static XSizeHints __neko_SetSizeHints(neko_Window *p_win) {
+static void _neko_ApplySizeHints(neko_Window *p_win) {
     /// Set flags for creating a fixed window
-    /// however it is up to windows manager to decide if the size hint flag
-    /// is respected or not
-    XSizeHints size_hints = { 0 };
+    /// however it is up to windows manager to decide if the size hint flags 
+    /// are respected or not
     if(p_win->hints & NEKO_HINT_FIXED_SIZE) {
+        XSizeHints size_hints = { 0 };
         size_hints.flags |= (PMinSize | PMaxSize);
         size_hints.min_width = size_hints.max_width = p_win->width;
         size_hints.min_height = size_hints.max_height = p_win->height;   
+        
+        // Submit size hints
+        XSetWMNormalHints(p_win->x11_handler.p_display, p_win->x11_handler.window, &size_hints);
     }
 
-    return size_hints;
+    else if(p_win->hints & NEKO_HINT_FULL_SCREEN) {
+        // I assume that your window manager honors _NET_WM_STATE atoms. 
+        // I do not intend to make some weird workaround for some obscure wm-s to make fullscreen functionality work, fuck off!
+        Atom *_NET_WM_STATE = &p_win->x11_handler.atoms._NET_WM_STATE; 
+        Atom *_NET_WM_STATE_FULLSCREEN = &p_win->x11_handler.atoms._NET_WM_STATE_FULLSCREEN;
+
+        *_NET_WM_STATE = XInternAtom(p_win->x11_handler.p_display, "_NET_WM_STATE", False);
+        *_NET_WM_STATE_FULLSCREEN = XInternAtom(p_win->x11_handler.p_display, "_NET_WM_STATE_FULLSCREEN", False);
+
+        printf("_NET_WM_STATE = %lu\n", *_NET_WM_STATE);
+        printf("_NET_WM_STATE_FULLSCREEN = %lu\n", *_NET_WM_STATE_FULLSCREEN);
+
+        XEvent ev;
+        memset(&ev, 0, sizeof(ev));
+        ev.type = ClientMessage;
+        ev.xclient.window = p_win->x11_handler.window;
+        ev.xclient.message_type = *_NET_WM_STATE;
+        ev.xclient.format = 32;
+        ev.xclient.data.l[0] = 1;
+        ev.xclient.data.l[1] = *_NET_WM_STATE_FULLSCREEN;
+        ev.xclient.data.l[2] = 0;
+
+        XSendEvent(p_win->x11_handler.p_display, p_win->x11_handler.window, False, 
+            SubstructureNotifyMask | SubstructureRedirectMask, &ev);
+    }
 }
 
 
 /// Initialise all cursors to use with xlib
-static void __neko_XInitCursors(neko_Window *p_win) {
-    __hidden_cur = None;
+/*static void _neko_XInitCursors(neko_Window *p_win) {*/
+    /*__hidden_cur = None;*/
 
-    // Load default cursor
-    __default_cur = XcursorLibraryLoadCursor(p_win->x11_handler.p_display, __NEKO_XLIB_DEFAULT_CURSOR);
-}
+    /*// Load default cursor*/
+    /*__default_cur = XcursorLibraryLoadCursor(p_win->x11_handler.p_display, __NEKO_XLIB_DEFAULT_CURSOR);*/
+/*}*/
 
 
-/// Destroy all cursors used in DENG
-static void __neko_XFreeCursors(neko_Window *p_win) {
-    XFreeCursor(p_win->x11_handler.p_display, __default_cur);
-    XFreeCursor(p_win->x11_handler.p_display, __hidden_cur);
-}
+/*/// Destroy all cursors used in DENG*/
+/*static void _neko_XFreeCursors(neko_Window *p_win) {*/
+    /*XFreeCursor(p_win->x11_handler.p_display, __default_cur);*/
+    /*XFreeCursor(p_win->x11_handler.p_display, __hidden_cur);*/
+/*}*/
 
 
 /// Unlike WIN32 api X11 doesn't have a callback system on events, which
 /// means that key events must be checked manually on every frame update 
-static void __neko_XHandleKeyEvents(neko_Window *p_win) {
+static void _neko_XHandleKeyEvents(neko_Window *p_win) {
     neko_Key key;
     switch (p_win->x11_handler.event.type) {
     case KeyPress: {
         key = translateX11Key(XLookupKeysym(&p_win->x11_handler.event.xkey, 0));
-        __neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+        _neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB, NEKO_INPUT_EVENT_TYPE_ACTIVE);
         break;
     }
         
     case KeyRelease:
         if(XEventsQueued(p_win->x11_handler.p_display, QueuedAfterReading)) {
             key = translateX11Key(XLookupKeysym(&p_win->x11_handler.event.xkey, 0));
-            __neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB,
+            _neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB,
                 NEKO_INPUT_EVENT_TYPE_RELEASED);
         }
         break;
@@ -196,17 +207,17 @@ static void __neko_XHandleKeyEvents(neko_Window *p_win) {
 
 
 /// Check for any mouse button events
-static void __neko_XHandleMouseEvents(neko_Window *p_win) {
+static void _neko_XHandleMouseEvents(neko_Window *p_win) {
     neko_MouseButton btn = NEKO_MOUSE_BTN_UNKNOWN;
     switch (p_win->x11_handler.event.type) {
     case ButtonPress:
         btn = translateX11Btn(p_win->x11_handler.event.xbutton.button);
-        __neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+        _neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_ACTIVE);
         break;
     
     case ButtonRelease:
         btn = translateX11Btn(p_win->x11_handler.event.xbutton.button);
-        __neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_RELEASED);
+        _neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_RELEASED);
         break;
 
     default:
@@ -216,7 +227,7 @@ static void __neko_XHandleMouseEvents(neko_Window *p_win) {
 
 
 /// Set new width and height from the recieved event
-static void __neko_XHandleResize(neko_Window *p_win) {
+static void _neko_XHandleResize(neko_Window *p_win) {
     p_win->width = p_win->x11_handler.event.xconfigure.width;
     p_win->height = p_win->x11_handler.event.xconfigure.height;
 }
@@ -288,14 +299,14 @@ void neko_GetMousePos (
 
 
 /// Currently only mouse hidden and mouse shown are supported 
-static void __neko_XSetCursor (
-    neko_Window *p_win,
-    bool hide
-) {
-    if(hide)
-        XDefineCursor(p_win->x11_handler.p_display, p_win->x11_handler.window, __hidden_cur);
-    else XDefineCursor(p_win->x11_handler.p_display, p_win->x11_handler.window, __default_cur);
-}
+/*static void _neko_XSetCursor (*/
+    /*neko_Window *p_win,*/
+    /*bool hide*/
+/*) {*/
+    /*if(hide)*/
+        /*XDefineCursor(p_win->x11_handler.p_display, p_win->x11_handler.window, __hidden_cur);*/
+    /*else XDefineCursor(p_win->x11_handler.p_display, p_win->x11_handler.window, __default_cur);*/
+/*}*/
 
 
 /// Switch mouse cursor behaviour within the DENG window 
@@ -305,7 +316,7 @@ void neko_SetMouseCursorMode (
 ) {
     switch(mouse_mode) {
     case NEKO_MOUSE_MODE_INVISIBLE:
-        __neko_XSetCursor(p_win, false);
+        /*_neko_XSetCursor(p_win, false);*/
         p_win->vc_data.is_enabled = false;
         neko_GetMousePos(p_win, true);
         neko_SetMouseCoords(p_win, p_win->vc_data.orig_x, p_win->vc_data.orig_y);
@@ -313,7 +324,7 @@ void neko_SetMouseCursorMode (
         break;
 
     case NEKO_MOUSE_MODE_CURSOR_VISIBLE: 
-        __neko_XSetCursor(p_win, true);
+        /*_neko_XSetCursor(p_win, true);*/
         p_win->vc_data.is_enabled = false;
         break;
 
@@ -327,21 +338,21 @@ void neko_SetMouseCursorMode (
 /// This function is meant to be called with every loop iteration 
 void neko_UpdateWindow(neko_Window *p_win) {
     // Check for exit event
-    if(XCheckTypedWindowEvent(p_win->x11_handler.p_display, p_win->x11_handler.window, 
-       ClientMessage, &p_win->x11_handler.event)) {
-        __is_running = false;
-        return;
-    }
+    /*if(XCheckTypedWindowEvent(p_win->x11_handler.p_display, p_win->x11_handler.window, */
+       /*ClientMessage, &p_win->x11_handler.event)) {*/
+        /*__is_running = false;*/
+        /*return;*/
+    /*}*/
 
-    __neko_UnreleaseKeys();
+    _neko_UnreleaseKeys();
     
     if(XCheckWindowEvent(p_win->x11_handler.p_display, p_win->x11_handler.window, 
        KeyPressMask | KeyReleaseMask, &p_win->x11_handler.event)) 
-        __neko_XHandleKeyEvents(p_win);
+        _neko_XHandleKeyEvents(p_win);
     
     if(XCheckWindowEvent(p_win->x11_handler.p_display, p_win->x11_handler.window, 
        ButtonPressMask | ButtonReleaseMask, &p_win->x11_handler.event)) 
-        __neko_XHandleMouseEvents(p_win);
+        _neko_XHandleMouseEvents(p_win);
 
     XWindowAttributes attribs;
     XGetWindowAttributes(p_win->x11_handler.p_display, p_win->x11_handler.window, &attribs);
@@ -358,7 +369,7 @@ void neko_UpdateWindow(neko_Window *p_win) {
 void neko_DestroyWindow(neko_Window *p_win) {
     if(!p_win->is_opengl) {
         XFreeGC(p_win->x11_handler.p_display, p_win->x11_handler.gc);
-        __neko_XFreeCursors(p_win);
+        /*_neko_XFreeCursors(p_win);*/
     }
     XDestroyWindow(p_win->x11_handler.p_display, p_win->x11_handler.window);
 }

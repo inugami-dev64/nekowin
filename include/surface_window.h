@@ -1,6 +1,6 @@
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
 /// licence: Apache, see LICENCE.md
-/// file: x11_surface.c - x11 window / surface creation handler header file
+/// file: surface_window.h - abstracted surface window header file
 /// author: Karl-Mihkel Ott
 
 #ifndef __NEKO_SURFACE_H
@@ -49,50 +49,6 @@ extern "C" {
 #endif
 
 
-#ifdef __linux__
-    #define EVENT_MASKS KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask \
-    
-    //#define NEKO_CURSOR_HIDDEN (char*) "xcursor/invisible"
-    //#define NEKO_CURSOR_DEFAULT (char*) "default"
-    //#define NEKO_CURSOR_ROTATE (char*) "plus"
-    #define __NEKO_XLIB_DEFAULT_CURSOR      "dnd_none"
-    #define __NEKO_DEFAULT_WINDOW_BORDER    5
-
-    // X11 includes 
-    #include <X11/Xutil.h>
-    #include <X11/Xos.h>
-    #include <X11/Xcursor/Xcursor.h>
-    #include <vulkan/vulkan_xlib.h>
-
-    typedef struct neko_SurfaceX11 {
-        Display *p_display;
-        Cursor default_cursor;
-        int32_t screen;
-        Window window;
-        XEvent event;
-        XVisualInfo *vi;
-        GC gc;
-    } neko_SurfaceX11;
-
-#elif defined(_WIN32)
-    #define NOMINMAX
-    #include <windows.h>
-    #include <synchapi.h>    
-    #include <stdio.h>
-    
-    typedef struct neko_SurfaceWIN32 {
-        WNDCLASS win;
-        HWND hwnd;
-        MSG message;
-        RAWINPUTDEVICE rids[2];
-        RAWINPUT raw_input;
-        UINT raw_input_size;
-    } neko_SurfaceWIN32;
-
-    #define NEKO_WIN32_CLASS_NAME L"NEKO_WINDOW"
-#endif
-
-
 /*
  * Virtual cursor (VC) position in DENG means that mouse cursor is stuck to certain position
  * and is only allowed to move within one frame cycle.
@@ -114,36 +70,17 @@ typedef struct neko_VCData {
 } neko_VCData;
 
 
-/// Main structure for storing information about surface window
-/// and its parameters. Some members are platform specific to WIN32 or Xlib
-typedef struct neko_Window {
-    int32_t width;
-    int32_t height;
-    const char *window_title;
-    uint64_t mx;
-    uint64_t my;
-    neko_Hint hints;
-    bool is_opengl;
-    neko_VCData vc_data;
+#if defined(__linux__)
+    #include <x11_surface.h>
+#elif defined(_WIN32)
+    #include <win32_surface.h>
+#endif
 
-    #ifdef __linux__
-        neko_SurfaceX11 x11_handler;
-    #endif
-#ifdef _WIN32
-        neko_SurfaceWIN32 win32_handler;
-    #endif
-    
-} neko_Window;
 
 
 /// Create new platform independant neko_Window instance for vulkan
 /// This functions uses either Xlib or WIN32 api to create window depending on the operating system
-neko_Window *neko_InitSurfaceWindow (
-    int32_t width, 
-    int32_t height, 
-    neko_Hint hints,
-    const char *title
-);
+neko_Window *neko_InitSurfaceWindow(int32_t width, int32_t height, neko_Hint hints, const char *title);
 
 
 /// Update window events and key arrays

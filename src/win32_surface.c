@@ -3,29 +3,20 @@
 /// file: win32_handler.c - win32 window / surface creation handler header file
 /// author: Karl-Mihkel Ott
 
-#define __DENG_SURFACE_C
+#define __NEKO_SURFACE_C
 #include <surface_window.h>
-
-/// WIN32 message callback function 
-static LRESULT CALLBACK __deng_Win32MessageHandler (
-    HWND hwnd, 
-    UINT msg, 
-    WPARAM param, 
-    LPARAM lparam
-);
 
 
 static HCURSOR __old_cursor = NULL;
 
 
-/// Create new platform independant deng_SurfaceWindow instance for vulkan
-deng_SurfaceWindow *deng_InitVKSurfaceWindow (
-    deng_i32_t width,
-    deng_i32_t height, 
-    char *title, 
-    deng_SurfaceWindowMode window_mode
+/// Create new platform independant neko_SurfaceWindow instance for vulkan
+neko_SurfaceWindow *neko_InitVKSurfaceWindow (
+    int32_t width,
+    int32_t height, 
+    char *title
 ) {
-    static deng_SurfaceWindow win = { 0 };
+    static neko_SurfaceWindow win = { 0 };
     // printf("Title: %s\n", title);
     // wchar_t *win_title = cm_ToWideString(title);
     // printf("title: 0x%p\n", title);
@@ -44,7 +35,7 @@ deng_SurfaceWindow *deng_InitVKSurfaceWindow (
     win.win32_handler.win.lpszClassName = DENG_WIN32_CLASS_NAME;
     win.win32_handler.win.hCursor = NULL;
     win.win32_handler.win.hbrBackground = (HBRUSH) COLOR_WINDOW;
-    win.win32_handler.win.lpfnWndProc = __deng_Win32MessageHandler;
+    win.win32_handler.win.lpfnWndProc = __neko_Win32MessageHandler;
     
     RegisterClass(&win.win32_handler.win);
     LPCTSTR win_class = DENG_WIN32_CLASS_NAME;
@@ -100,8 +91,8 @@ deng_SurfaceWindow *deng_InitVKSurfaceWindow (
     win.height = size_rect.bottom - size_rect.top;
     win.mode = WIN32_WINDOW;
 
-    win.vc_data.orig_x = (deng_i64_t)(win.width / 2);
-    win.vc_data.orig_y = (deng_i64_t)(win.height / 2);
+    win.vc_data.orig_x = (int64_t)(win.width / 2);
+    win.vc_data.orig_y = (int64_t)(win.height / 2);
 
 	__is_running = true;
 
@@ -110,14 +101,14 @@ deng_SurfaceWindow *deng_InitVKSurfaceWindow (
 
 
 /// WIN32 messenger callback
-static LRESULT CALLBACK __deng_Win32MessageHandler (
+static LRESULT CALLBACK __neko_Win32MessageHandler (
    HWND hwnd, 
    UINT msg, 
    WPARAM wparam, 
    LPARAM lparam
 ) {
-    deng_Key key;
-    deng_MouseButton btn;
+    neko_Key key;
+    neko_MouseButton btn;
 
 
     switch(msg) {  
@@ -128,8 +119,8 @@ static LRESULT CALLBACK __deng_Win32MessageHandler (
 
         case WM_SYSKEYDOWN: 
         case WM_KEYDOWN:
-            key = translateWIN32Key((deng_ui16_t) wparam);
-            __deng_RegisterKeyEvent (
+            key = translateWIN32Key((uint16_t) wparam);
+            __neko_RegisterKeyEvent (
                 key,
                 DENG_MOUSE_BTN_UNKNOWN,
                 DENG_INPUT_TYPE_KB,
@@ -140,8 +131,8 @@ static LRESULT CALLBACK __deng_Win32MessageHandler (
         case WM_SYSKEYUP: 
         case WM_KEYUP: 
         case WM_IME_KEYUP: 
-            key = translateWIN32Key((deng_ui16_t) wparam);
-            __deng_RegisterKeyEvent (
+            key = translateWIN32Key((uint16_t) wparam);
+            __neko_RegisterKeyEvent (
                 key,
                 DENG_MOUSE_BTN_UNKNOWN,
                 DENG_INPUT_TYPE_KB,
@@ -153,7 +144,7 @@ static LRESULT CALLBACK __deng_Win32MessageHandler (
         case WM_MBUTTONDOWN:
         case WM_RBUTTONDOWN:
             btn = translateWIN32Btn(msg);
-            __deng_RegisterKeyEvent (
+            __neko_RegisterKeyEvent (
                 DENG_KEY_UNKNOWN,
                 btn,
                 DENG_INPUT_TYPE_MOUSE,
@@ -165,7 +156,7 @@ static LRESULT CALLBACK __deng_Win32MessageHandler (
         case WM_MBUTTONUP: 
         case WM_RBUTTONUP: 
             btn = translateWIN32Btn(msg);
-            __deng_RegisterKeyEvent (
+            __neko_RegisterKeyEvent (
                 DENG_KEY_UNKNOWN,
                 btn,
                 DENG_INPUT_TYPE_MOUSE,
@@ -176,7 +167,7 @@ static LRESULT CALLBACK __deng_Win32MessageHandler (
         case WM_MOUSEWHEEL: {
             LONG delta = GET_WHEEL_DELTA_WPARAM(wparam);
             if (delta > 0) {
-                __deng_RegisterKeyEvent (
+                __neko_RegisterKeyEvent (
                     DENG_KEY_UNKNOWN,
                     DENG_MOUSE_SCROLL_UP,
                     DENG_INPUT_TYPE_MOUSE,
@@ -185,7 +176,7 @@ static LRESULT CALLBACK __deng_Win32MessageHandler (
             }
 
             else {
-                __deng_RegisterKeyEvent(
+                __neko_RegisterKeyEvent(
                     DENG_KEY_UNKNOWN,
                     DENG_MOUSE_SCROLL_DOWN,
                     DENG_INPUT_TYPE_MOUSE,
@@ -202,16 +193,16 @@ static LRESULT CALLBACK __deng_Win32MessageHandler (
 
 /// Update window events and key arrays
 /// This function is meant to be called with every loop iteration 
-void deng_UpdateWindow(deng_SurfaceWindow *p_win) {
+void neko_UpdateWindow(neko_SurfaceWindow *p_win) {
     // Find the scroll event status
-    deng_bool_t is_scr_up = deng_FindKeyStatus(
+    neko_bool_t is_scr_up = neko_FindKeyStatus(
         DENG_KEY_UNKNOWN,
         DENG_MOUSE_SCROLL_UP,
         DENG_INPUT_TYPE_MOUSE,
         DENG_INPUT_EVENT_TYPE_ACTIVE
     );
 
-    deng_bool_t is_scr_down = deng_FindKeyStatus(
+    neko_bool_t is_scr_down = neko_FindKeyStatus(
         DENG_KEY_UNKNOWN,
         DENG_MOUSE_SCROLL_DOWN,
         DENG_INPUT_TYPE_MOUSE,
@@ -220,7 +211,7 @@ void deng_UpdateWindow(deng_SurfaceWindow *p_win) {
 
     // Check if scroll events have occured
     if (is_scr_up) {
-        __deng_RegisterKeyEvent (
+        __neko_RegisterKeyEvent (
             DENG_KEY_UNKNOWN,
             DENG_MOUSE_SCROLL_UP,
             DENG_INPUT_TYPE_MOUSE,
@@ -229,14 +220,14 @@ void deng_UpdateWindow(deng_SurfaceWindow *p_win) {
     }
 
     if (is_scr_down) {
-        __deng_RegisterKeyEvent (
+        __neko_RegisterKeyEvent (
             DENG_KEY_UNKNOWN,
             DENG_MOUSE_SCROLL_DOWN,
             DENG_INPUT_TYPE_MOUSE,
             DENG_INPUT_EVENT_TYPE_RELEASED
         );
     }
-    __deng_UnreleaseKeys();
+    __neko_UnreleaseKeys();
     ShowWindow(p_win->win32_handler.hwnd, SW_NORMAL);
 
     if (__mouse_mode == DENG_MOUSE_MODE_INVISIBLE) SetCursor(0);
@@ -249,13 +240,13 @@ void deng_UpdateWindow(deng_SurfaceWindow *p_win) {
 
 
 /// Destroy window instance and free all resources that were used
-void deng_DestroyWindow(deng_SurfaceWindow *p_win) {
+void neko_DestroyWindow(neko_SurfaceWindow *p_win) {
     DestroyWindow(p_win->win32_handler.hwnd);
 }
 
 
 /// Check if window is still running and no close events have happened
-deng_bool_t deng_IsRunning() {
+neko_bool_t neko_IsRunning() {
     return __is_running;
 }
 
@@ -264,15 +255,15 @@ deng_bool_t deng_IsRunning() {
 /****************************************/
 
 /// Switch mouse cursor behaviour within the DENG window 
-void deng_SetMouseCursorMode (
-    deng_SurfaceWindow *p_win, 
-    deng_MouseMode mouse_mode
+void neko_SetMouseCursorMode (
+    neko_SurfaceWindow *p_win, 
+    neko_MouseMode mouse_mode
 ) {
     __mouse_mode = mouse_mode;
     switch(mouse_mode) {
     case DENG_MOUSE_MODE_INVISIBLE:
         __old_cursor = SetCursor(0);
-        deng_GetMousePos(p_win, true);
+        neko_GetMousePos(p_win, true);
         p_win->win32_handler.win.hCursor = NULL;
 
         p_win->vc_data.is_enabled = true;
@@ -288,10 +279,10 @@ void deng_SetMouseCursorMode (
 
 /// Set mouse coordinates to certain position
 /// This function is used to force set mouse cursor position
-void deng_SetMouseCoords (
-    deng_SurfaceWindow *p_win, 
-    deng_px_t x, 
-    deng_px_t y
+void neko_SetMouseCoords (
+    neko_SurfaceWindow *p_win, 
+    neko_px_t x, 
+    neko_px_t y
 ) {
     POINT pnt;
     pnt.x = (LONG) x;
@@ -305,9 +296,9 @@ void deng_SetMouseCoords (
 }
 
 
-void deng_GetMousePos (
-    deng_SurfaceWindow *p_win, 
-    deng_bool_t init_vc
+void neko_GetMousePos (
+    neko_SurfaceWindow *p_win, 
+    neko_bool_t init_vc
 ) {
     POINT point;
     
@@ -324,12 +315,12 @@ void deng_GetMousePos (
     
     // Check if virtual mouse positioning is enabled
     if(p_win->vc_data.is_enabled && !init_vc) {
-        deng_px_t movement_x = (point.x - p_win->vc_data.orig_x);
-        deng_px_t movement_y = (point.y - p_win->vc_data.orig_y);
+        neko_px_t movement_x = (point.x - p_win->vc_data.orig_x);
+        neko_px_t movement_y = (point.y - p_win->vc_data.orig_y);
 
         // Check if cursor should be set to the origin position
         if(point.x  != (LONG) p_win->vc_data.orig_x || point.y  != (LONG) p_win->vc_data.orig_y) {
-            deng_SetMouseCoords (
+            neko_SetMouseCoords (
                 p_win, 
                 p_win->vc_data.orig_x, 
                 p_win->vc_data.orig_y
@@ -368,7 +359,7 @@ void deng_GetMousePos (
         p_win->mx = p_win->vc_data.orig_x;
         p_win->my = p_win->vc_data.orig_y;
 
-        deng_SetMouseCoords (
+        neko_SetMouseCoords (
             p_win, 
             p_win->mx, 
             p_win->my
@@ -379,11 +370,11 @@ void deng_GetMousePos (
 
 /// Limit the largest and smallest virtual cursor position that can be achieved using 
 /// virtual mouse positioning
-void deng_LimitVirtualPos(
-    deng_px_t max_x,
-    deng_px_t min_x,
-    deng_px_t max_y,
-    deng_px_t min_y
+void neko_LimitVirtualPos(
+    neko_px_t max_x,
+    neko_px_t min_x,
+    neko_px_t max_y,
+    neko_px_t min_y
 ) {
     __min_vc_x = min_x;
     __max_vc_x = max_x;
@@ -394,9 +385,9 @@ void deng_LimitVirtualPos(
 
 /// Set virtual mouse position overflow actions that specify what
 /// should happen if virtual mouse position limit has been reached
-void deng_SetOverflowAction(
-    deng_VCPOverflowAction x_overflow_act,
-    deng_VCPOverflowAction y_overflow_act
+void neko_SetOverflowAction(
+    neko_VCPOverflowAction x_overflow_act,
+    neko_VCPOverflowAction y_overflow_act
 ) {
     __x_overflow_act = x_overflow_act;
     __y_overflow_act = y_overflow_act;

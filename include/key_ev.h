@@ -48,7 +48,7 @@ neko_InputEv *neko_UnmaskInput(neko_InputBits bits);
 
 /// Register new keyevent to key register
 /// This function is meant to be called only by DENG platform dependant surface instances
-void __neko_RegisterKeyEvent (
+void _neko_RegisterKeyEvent (
     neko_Key key, 
     neko_MouseButton btn, 
     neko_InputType in_type, 
@@ -57,7 +57,7 @@ void __neko_RegisterKeyEvent (
 
 
 /// Clean released key and mouse button array 
-void __neko_UnreleaseKeys();
+void _neko_UnreleaseKeys();
 
 
 /// Find given key or mouse button status from specified event array
