@@ -66,7 +66,6 @@ neko_Window *neko_InitSurfaceWindow (
 
 /// Create a simple X window to act as a Vulkan surface
 static void __neko_CreateVkWindow(neko_Window *p_win) {
-
     p_win->x11_handler.window = XCreateSimpleWindow(p_win->x11_handler.p_display, DefaultRootWindow(p_win->x11_handler.p_display), 
         0, 0, p_win->width, p_win->height, __NEKO_DEFAULT_WINDOW_BORDER, WhitePixel(p_win->x11_handler.p_display, p_win->x11_handler.screen), 
         BlackPixel(p_win->x11_handler.p_display, p_win->x11_handler.screen));
@@ -81,7 +80,8 @@ static void __neko_CreateVkWindow(neko_Window *p_win) {
 
     XSelectInput(p_win->x11_handler.p_display, p_win->x11_handler.window, EVENT_MASKS);
     p_win->x11_handler.gc = XCreateGC(p_win->x11_handler.p_display, 
-        p_win->x11_handler.window, 0, 0);
+                                      p_win->x11_handler.window, 0, 0);
+
     XSetBackground(p_win->x11_handler.p_display, p_win->x11_handler.gc, 
         BlackPixel(p_win->x11_handler.p_display, p_win->x11_handler.screen));
 
@@ -123,6 +123,10 @@ static void __neko_CreateGlWindow(neko_Window *p_win) {
     XMapWindow(p_win->x11_handler.p_display, p_win->x11_handler.window);
     XStoreName(p_win->x11_handler.p_display, p_win->x11_handler.window, p_win->window_title);
 
+    // Apply all given size hints
+    XSizeHints s_hints = __neko_SetSizeHints(p_win);
+    XSetWMNormalHints(p_win->x11_handler.p_display, p_win->x11_handler.window, &s_hints);
+
     GLXContext glc = glXCreateContext(p_win->x11_handler.p_display, p_win->x11_handler.vi, NULL, GL_TRUE);
     glXMakeCurrent(p_win->x11_handler.p_display, p_win->x11_handler.window, glc);
     // glEnable(GL_DEPTH_TEST);
@@ -130,7 +134,7 @@ static void __neko_CreateGlWindow(neko_Window *p_win) {
     __is_running = true;
     __atom_kill = XInternAtom(p_win->x11_handler.p_display, "WM_DELETE_WINDOW", True);
     XSetWMProtocols(p_win->x11_handler.p_display, p_win->x11_handler.window, &__atom_kill, True);
-    /*__neko_XInitCursors(p_win);*/
+    __neko_XInitCursors(p_win);
 }
 
 
@@ -339,9 +343,10 @@ void neko_UpdateWindow(neko_Window *p_win) {
        ButtonPressMask | ButtonReleaseMask, &p_win->x11_handler.event)) 
         __neko_XHandleMouseEvents(p_win);
 
-    if(XCheckWindowEvent(p_win->x11_handler.p_display, p_win->x11_handler.window, 
-       StructureNotifyMask, &p_win->x11_handler.event))
-        __neko_XHandleResize(p_win);
+    XWindowAttributes attribs;
+    XGetWindowAttributes(p_win->x11_handler.p_display, p_win->x11_handler.window, &attribs);
+    p_win->width = attribs.width;
+    p_win->height = attribs.height;
 
     // Check if the window is used as in OpenGL context
     if(p_win->is_opengl)
@@ -362,10 +367,10 @@ void neko_DestroyWindow(neko_Window *p_win) {
 /// Limit the largest and smallest virtual cursor position that can be achieved using 
 /// virtual mouse positioning
 void neko_LimitVirtualPos (
-    uint64_t max_x,        
-    uint64_t min_x,        
-    uint64_t max_y,        
-    uint64_t min_y     
+    uint64_t max_x,       
+    uint64_t min_x,
+    uint64_t max_y,
+    uint64_t min_y
 ) {
     __max_vc_x = max_x;
     __min_vc_x = min_x;

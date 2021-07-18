@@ -50,8 +50,7 @@ extern "C" {
 
 
 #ifdef __linux__
-    #define EVENT_MASKS KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
-        FocusChangeMask | PointerMotionMask | StructureNotifyMask
+    #define EVENT_MASKS KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask \
     
     //#define NEKO_CURSOR_HIDDEN (char*) "xcursor/invisible"
     //#define NEKO_CURSOR_DEFAULT (char*) "default"

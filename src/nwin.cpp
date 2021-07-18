@@ -64,10 +64,10 @@ namespace neko {
         m_prev_vc_pos.first = m_p_surface->vc_data.x;
         m_prev_vc_pos.second = m_p_surface->vc_data.y;
 
+        neko_UpdateWindow(m_p_surface);
+
         if(m_hints & NEKO_HINT_API_OPENGL)
             glViewport(0, 0, m_p_surface->width, m_p_surface->height);
-
-        neko_UpdateWindow(m_p_surface);
     }
 
 

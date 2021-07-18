@@ -32,11 +32,11 @@ struct shaders {
 
 
 static GLfloat vertices[] = {
-//  X     Y     Z           R     G     B
-   1.0f, 1.0f, 0.0f,       1.0f, 0.0f, 0.0f, // vertex 0
-  -1.0f, 1.0f, 0.0f,       0.0f, 1.0f, 0.0f, // vertex 1
-   1.0f,-1.0f, 0.0f,       0.0f, 0.0f, 1.0f, // vertex 2
-  -1.0f,-1.0f, 0.0f,       1.0f, 0.0f, 0.0f, // vertex 3
+//  X     Y     Z     A           R     G     B     A
+   -1.0f, 1.0f, 0.0f, 1.0f,       1.0f, 0.0f, 0.0f, 1.0f, // vertex 0
+  1.0f, 1.0f, 0.0f, 1.0f,       0.0f, 1.0f, 0.0f, 1.0f, // vertex 1
+   1.0f,-1.0f, 0.0f, 1.0f,       0.0f, 0.0f, 1.0f, 1.0f, // vertex 2
+  -1.0f,-1.0f, 0.0f, 1.0f,       1.0f, 0.0f, 0.0f, 1.0f, // vertex 3
 }; // 4 vertices with 6 components (floats) each
 
 
@@ -123,14 +123,15 @@ void create_buffer_handles() {
     glGenBuffers(1, &ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     
-    glBufferData(GL_ARRAY_BUFFER, 24 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    std::cout << "Vertices size: " << sizeof(vertices) << std::endl;
+    glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
 
     // Enable vertex attribute arrays
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (char*) 0 + 3 * sizeof(GLfloat));
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (char*) 0 + 3 * sizeof(GLfloat));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*) 0 + 4 * sizeof(GLfloat));
 
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
 }
@@ -175,12 +176,12 @@ void err_check(const std::string &func_name) {
 
 void run(neko::Window &win) {
     while(neko_IsRunning()) {
-        win.update();
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(sh_program);
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        win.update();
 
         // Check for any errors during the frame generation
         err_check("glDrawElements");
