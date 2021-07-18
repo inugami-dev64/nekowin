@@ -2,6 +2,6 @@
 Makefile
 build
 compile_commands.json
-nwin.make
+*.make
 obj
 tags
