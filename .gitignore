@@ -1,3 +1,4 @@
+.cache
 Makefile
 build
 compile_commands.json

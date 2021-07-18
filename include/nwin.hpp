@@ -60,10 +60,10 @@
  */ 
 
 
-#ifndef __WINDOW_H
-#define __WINDOW_H
+#ifndef __NWIN_HPP
+#define __NWIN_HPP
 
-#ifdef __WINDOW_CPP
+#ifdef __NWIN_CPP
     #include <stdlib.h>
     #include <stdint.h>
     #include <vector>
@@ -84,7 +84,7 @@ namespace neko {
     /// Main window handling class for DENG
     class Window {
     private:
-        neko_SurfaceWindow *m_p_surface;
+        neko_Window *m_p_surface;
         neko_Hint m_hints;
         std::string m_title;
         bool m_is_vc = false;

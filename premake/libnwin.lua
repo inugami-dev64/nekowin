@@ -1,5 +1,5 @@
 --- nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
---- licence: MIT, see LICENCE.md
+--- licence: Apache, see LICENCE.md
 --- file: libnwin.lua - libnwin build configuration
 --- author: Karl-Mihkel Ott
 
@@ -7,14 +7,17 @@ local libnwin = {}
 
 function libnwin.build() 
     project "nwin"
-        kind "SharedLib"
-        language "C++"
-        cppdialect "C++14"
+        if _OPTIONS["shared"] then
+            kind "SharedLib"
+        else 
+            kind "StaticLib"
+        end
+        language "C"
+        cdialect "C99"
 
         files {
             "include/*.h",
             "src/*.c",
-            "src/*.cpp"
         }
 
         filter "platforms:Win32"

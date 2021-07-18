@@ -1,6 +1,6 @@
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
-/// licence: MIT, see LICENCE.md
-/// file: key_ev.h - key event handler header file
+/// licence: Apache, see LICENCE.md
+/// file: key_definitions.h - keycode definitions' header
 /// author: Karl-Mihkel Ott
 
 #ifndef NEKO_KEY_DEFINITIONS_H
@@ -30,7 +30,8 @@ typedef uint16_t neko_Hint;
 #define NEKO_HINT_API_OPENGL    0x0001
 #define NEKO_HINT_API_VULKAN    0x0002
 #define NEKO_HINT_FULL_SCREEN   0x0004
-#define NEKO_HINT_RESIZEABLE    0x0008
+#define NEKO_HINT_FIXED_SIZE    0x0008
+#define NEKO_HINT_RESIZEABLE    0x0010
 
 
 /// Specify input event type for lookup

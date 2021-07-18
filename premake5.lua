@@ -1,6 +1,6 @@
 --- nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
---- licence: MIT, see LICENCE.md
---- file: premake5.lua - main premake configuration file
+--- licence: Apache, see LICENCE.md
+--- file: premake5 - main premake configuration file
 --- author: Karl-Mihkel Ott
 
 workspace "nwin"
@@ -20,5 +20,23 @@ workspace "nwin"
         optimize "Speed"
     filter {}
 
-local libnwin = require("libnwin")
+newoption {
+    trigger = "no-test-apps",
+    description = "Do not build test applications with nekowin"
+}
+
+newoption {
+    trigger = "shared",
+    description = "Build shared libraries instead of static ones"
+}
+
+local libnwin = require("premake/libnwin")
 libnwin.build()
+
+local libnwinpp = require("premake/libnwinpp")
+libnwinpp.build()
+
+if not _OPTIONS["no-test-app"] then
+    local glapp = require("premake/glapp")
+    glapp.build()
+end
