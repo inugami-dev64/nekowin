@@ -44,10 +44,7 @@ namespace neko {
 
     /// Hide the cursor's visbility
     void Window::hideCursor() {
-        neko_SetMouseCursorMode (
-            m_p_surface, 
-            NEKO_MOUSE_MODE_INVISIBLE
-        );
+        neko_SetMouseCursorMode(m_p_surface, NEKO_MOUSE_MODE_INVISIBLE);
     }
 
 

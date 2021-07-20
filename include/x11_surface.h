@@ -11,6 +11,12 @@
 
 #define VALUE_MASK CWOverrideRedirect | CWColormap | CWEventMask
 
+
+// Message type definitions
+#define _NET_WM_STATE_REMOVE    0
+#define _NET_WM_STATE_ADD       1
+#define _NET_WM_STATE_TOGGLE    2
+
 //#define NEKO_CURSOR_HIDDEN (char*) "xcursor/invisible"
 //#define NEKO_CURSOR_DEFAULT (char*) "default"
 //#define NEKO_CURSOR_ROTATE (char*) "plus"
@@ -69,6 +75,7 @@ static void _neko_XHandleResize(neko_Window *p_win);
 
 /// Window configuration 
 static void _neko_GetAtoms(neko_Window *p_win);
+static void _neko_SendClientMessage(neko_Window *p_win, Atom msg_type, long *data);
 static void _neko_ApplySizeHints(neko_Window *p_win);
 
 /// Window creation

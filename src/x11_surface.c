@@ -96,13 +96,13 @@ static void _neko_CreateGlWindow(neko_Window *p_win) {
 
     Window root = DefaultRootWindow(p_win->x11.display);
     p_win->x11.swa.colormap = XCreateColormap(p_win->x11.display, root, p_win->x11.vi->visual, AllocNone);
-    if(p_win->hints & NEKO_HINT_FULL_SCREEN) {
-        XRRScreenResources *sc_res = XRRGetScreenResources(p_win->x11.display, root);
-        XRRCrtcInfo *info = XRRGetCrtcInfo(p_win->x11.display, sc_res, *sc_res->crtcs);
-        p_win->width = info->width;
-        p_win->height = info->height;
-        p_win->x11.swa.override_redirect = True;
-    }
+    /*if(p_win->hints & NEKO_HINT_FULL_SCREEN) {*/
+        /*XRRScreenResources *sc_res = XRRGetScreenResources(p_win->x11.display, root);*/
+        /*XRRCrtcInfo *info = XRRGetCrtcInfo(p_win->x11.display, sc_res, *sc_res->crtcs);*/
+        /*p_win->width = info->width;*/
+        /*p_win->height = info->height;*/
+        /*p_win->x11.swa.override_redirect = True;*/
+    /*}*/
 
     // Create a new window instance for OpenGL renderer targets
     p_win->x11.window = XCreateWindow(p_win->x11.display, root, 0, 0, p_win->width, p_win->height,
@@ -135,6 +135,22 @@ static void _neko_GetAtoms(neko_Window *p_win) {
 }
 
 
+static void _neko_SendClientMessage(neko_Window *p_win, Atom msg_type, long *data) {
+    XEvent ev = { ClientMessage };
+    ev.xclient.window = p_win->x11.window;
+    ev.xclient.format = 32;
+    ev.xclient.message_type = msg_type;
+    ev.xclient.data.l[0] = data[0];
+    ev.xclient.data.l[1] = data[1];
+    ev.xclient.data.l[2] = data[2];
+    ev.xclient.data.l[3] = data[3];
+    ev.xclient.data.l[4] = data[4];
+
+    XSendEvent(p_win->x11.display, p_win->x11.window, False, 
+        SubstructureNotifyMask | SubstructureRedirectMask, &ev);
+}
+
+
 static void _neko_ApplySizeHints(neko_Window *p_win) {
     /// Set flags for creating a fixed window
     /// however it is up to windows manager to decide if the size hint flags 
@@ -152,14 +168,9 @@ static void _neko_ApplySizeHints(neko_Window *p_win) {
     else if(p_win->hints & NEKO_HINT_FULL_SCREEN) {
         // I assume that your window manager honors _NET_WM_STATE atoms. 
         // I do not intend to make some weird workaround for some obscure wm-s to make fullscreen functionality work, fuck off!
-        Atom *_NET_WM_STATE = &p_win->x11.atoms._NET_WM_STATE; 
-        Atom *_NET_WM_STATE_FULLSCREEN = &p_win->x11.atoms._NET_WM_STATE_FULLSCREEN;
-        
-        XChangeProperty(p_win->x11.display, p_win->x11.window, *_NET_WM_STATE, XA_ATOM, 32, 
-            PropModeReplace, (unsigned char*) _NET_WM_STATE_FULLSCREEN, 1);
 
-        p_win->x11.swa.override_redirect = True;
-        XChangeWindowAttributes(p_win->x11.display, p_win->x11.window, VALUE_MASK, &p_win->x11.swa);
+        long ldata[5] = { _NET_WM_STATE_ADD, p_win->x11.atoms._NET_WM_STATE_FULLSCREEN, 0, 1, 0 };
+        _neko_SendClientMessage(p_win, *_NET_WM_STATE, ldata);
     }
 }
 
