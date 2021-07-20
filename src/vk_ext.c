@@ -46,8 +46,8 @@ VkResult neko_InitVKSurface (
     #ifdef __linux__
         VkXlibSurfaceCreateInfoKHR surface_info;
         surface_info.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-        surface_info.window = p_win->x11_handler.window;
-        surface_info.dpy = p_win->x11_handler.p_display;
+        surface_info.window = p_win->x11.window;
+        surface_info.dpy = p_win->x11.display;
         surface_info.flags = 0;
         surface_info.pNext = NULL;
 

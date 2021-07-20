@@ -67,7 +67,7 @@ namespace neko {
         neko_UpdateWindow(m_p_surface);
 
         if(m_hints & NEKO_HINT_API_OPENGL)
-            glViewport(0, 0, 800, 600);
+            glViewport(0, 0, m_p_surface->width, m_p_surface->height);
     }
 
 

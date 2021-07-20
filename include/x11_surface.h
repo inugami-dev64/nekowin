@@ -6,8 +6,10 @@
 #ifndef __X11_SURFACE_H
 #define __X11_SURFACE_H
 
-#define EVENT_MASKS KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
+#define EVENT_MASK KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
                     SubstructureNotifyMask | SubstructureRedirectMask
+
+#define VALUE_MASK CWOverrideRedirect | CWColormap | CWEventMask
 
 //#define NEKO_CURSOR_HIDDEN (char*) "xcursor/invisible"
 //#define NEKO_CURSOR_DEFAULT (char*) "default"
@@ -17,8 +19,9 @@
 
 // X11 includes 
 #include <X11/Xutil.h>
-#include <X11/Xos.h>
+#include <X11/Xatom.h>
 #include <X11/Xcursor/Xcursor.h>
+#include <X11/extensions/Xrandr.h>
 #include <vulkan/vulkan_xlib.h>
 
 typedef struct _neko_X11Atoms {
@@ -28,12 +31,13 @@ typedef struct _neko_X11Atoms {
 } _neko_X11Atoms;
 
 typedef struct _neko_SurfaceX11 {
-    Display *p_display;
+    Display *display;
     Cursor default_cursor;
     int32_t screen;
     Window window;
     XEvent event;
     XVisualInfo *vi;
+    XSetWindowAttributes swa;
     GC gc;
     _neko_X11Atoms atoms;
 } neko_SurfaceX11;
@@ -49,7 +53,7 @@ typedef struct neko_Window {
     neko_Hint hints;
     bool is_opengl;
     neko_VCData vc_data;
-    neko_SurfaceX11 x11_handler;
+    neko_SurfaceX11 x11;
 } neko_Window;
 
 
@@ -64,6 +68,7 @@ static void _neko_XHandleMouseEvents();
 static void _neko_XHandleResize(neko_Window *p_win);
 
 /// Window configuration 
+static void _neko_GetAtoms(neko_Window *p_win);
 static void _neko_ApplySizeHints(neko_Window *p_win);
 
 /// Window creation

@@ -33,6 +33,7 @@ function libnwin.build()
             links {
                 "X11",
                 "Xcursor",
+                "Xrandr",
                 "GL",
                 "GLU",
                 "dl"

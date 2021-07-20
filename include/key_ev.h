@@ -15,6 +15,7 @@ extern "C" {
     #include <stdarg.h>   
     #include <stdint.h>
     #include <stdbool.h>
+    #include <string.h>
     #include <math.h>
 
     #include <vulkan/vulkan.h>
