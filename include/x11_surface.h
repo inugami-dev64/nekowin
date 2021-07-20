@@ -9,7 +9,7 @@
 #define EVENT_MASK KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
                     SubstructureNotifyMask | SubstructureRedirectMask
 
-#define VALUE_MASK CWOverrideRedirect | CWColormap | CWEventMask
+#define VALUE_MASK CWBorderPixel | CWColormap | CWEventMask
 
 
 // Message type definitions

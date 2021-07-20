@@ -3,7 +3,6 @@
 /// file: x11_surface.c - x11 window / surface creation handler source file
 /// author: Karl-Mihkel Ott
 
-#include <X11/Xlib.h>
 #define __NEKO_SURFACE_C
 #include <surface_window.h>
 
@@ -146,7 +145,7 @@ static void _neko_SendClientMessage(neko_Window *p_win, Atom msg_type, long *dat
     ev.xclient.data.l[3] = data[3];
     ev.xclient.data.l[4] = data[4];
 
-    XSendEvent(p_win->x11.display, p_win->x11.window, False, 
+    XSendEvent(p_win->x11.display, DefaultRootWindow(p_win->x11.display), False, 
         SubstructureNotifyMask | SubstructureRedirectMask, &ev);
 }
 
@@ -155,7 +154,7 @@ static void _neko_ApplySizeHints(neko_Window *p_win) {
     /// Set flags for creating a fixed window
     /// however it is up to windows manager to decide if the size hint flags 
     /// are respected or not
-    if(p_win->hints & NEKO_HINT_FIXED_SIZE) {
+    if(!(p_win->hints & NEKO_HINT_RESIZEABLE)) {
         XSizeHints size_hints = { 0 };
         size_hints.flags |= (PMinSize | PMaxSize);
         size_hints.min_width = size_hints.max_width = p_win->width;
@@ -165,12 +164,15 @@ static void _neko_ApplySizeHints(neko_Window *p_win) {
         XSetWMNormalHints(p_win->x11.display, p_win->x11.window, &size_hints);
     }
 
-    else if(p_win->hints & NEKO_HINT_FULL_SCREEN) {
+    if(p_win->hints & NEKO_HINT_FULL_SCREEN) {
         // I assume that your window manager honors _NET_WM_STATE atoms. 
         // I do not intend to make some weird workaround for some obscure wm-s to make fullscreen functionality work, fuck off!
 
         long ldata[5] = { _NET_WM_STATE_ADD, p_win->x11.atoms._NET_WM_STATE_FULLSCREEN, 0, 1, 0 };
-        _neko_SendClientMessage(p_win, *_NET_WM_STATE, ldata);
+        _neko_SendClientMessage(p_win, p_win->x11.atoms._NET_WM_STATE, ldata);
+        /*Atom atoms[2] = { p_win->x11.atoms._NET_WM_STATE_FULLSCREEN, 0 };*/
+        /*XChangeProperty(p_win->x11.display, p_win->x11.window, p_win->x11.atoms._NET_WM_STATE, XA_ATOM, 32, PropModeReplace, */
+            /*(unsigned char*) atoms, 1);*/
     }
 }
 
