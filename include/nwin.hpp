@@ -71,12 +71,12 @@
     #include <string>
 
     #include <vulkan/vulkan.h>
+    #include <nwin.h>
 #endif
 
 
 #define NOMINMAX
 #include <surface_window.h>
-#include <vk_ext.h>
 
 
 namespace neko {   
@@ -131,7 +131,7 @@ namespace neko {
 
 
         /// Search for all required vulkan extensions
-        char **findVulkanSurfaceExtensions(uint32_t *p_ext_c, bool enable_vl);
+        char **findVulkanSurfaceExtensions(size_t *p_ext_c, bool enable_vl);
 
 
 

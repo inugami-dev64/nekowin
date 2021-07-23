@@ -20,8 +20,8 @@
 //#define NEKO_CURSOR_HIDDEN (char*) "xcursor/invisible"
 //#define NEKO_CURSOR_DEFAULT (char*) "default"
 //#define NEKO_CURSOR_ROTATE (char*) "plus"
-#define __NEKO_XLIB_DEFAULT_CURSOR      "dnd_none"
-#define __NEKO_DEFAULT_WINDOW_BORDER    5
+#define _NEKO_XLIB_DEFAULT_CURSOR      "dnd_none"
+#define _NEKO_DEFAULT_WINDOW_BORDER    5
 
 // X11 includes 
 #include <X11/Xutil.h>
@@ -36,23 +36,22 @@ typedef struct _neko_X11Atoms {
     Atom _NET_WM_STATE_FULLSCREEN;
 } _neko_X11Atoms;
 
+
 typedef struct _neko_SurfaceX11 {
-    Display *display;
     Cursor default_cursor;
-    int32_t screen;
     Window window;
-    XEvent event;
-    XVisualInfo *vi;
-    XSetWindowAttributes swa;
     GC gc;
-    _neko_X11Atoms atoms;
+    XVisualInfo *p_vi;
+    XVisualInfo vi;
 } neko_SurfaceX11;
 
 
 /// Main structure for storing information about surface window and its parameters.
 typedef struct neko_Window {
-    int32_t width;
-    int32_t height;
+    int32_t cwidth;
+    int32_t cheight;
+    int32_t swidth;
+    int32_t sheight;
     const char *window_title;
     uint64_t mx;
     uint64_t my;
@@ -61,6 +60,17 @@ typedef struct neko_Window {
     neko_VCData vc_data;
     neko_SurfaceX11 x11;
 } neko_Window;
+
+#ifdef __NEKO_SURFACE_C 
+    // Structure for containing all API specific information 
+    struct {
+        Display *display;
+        XEvent fr_ev;
+        _neko_X11Atoms atoms;
+        Window root;
+        int32_t scr;
+    } _neko_API;
+#endif
 
 
 /// Function declarations
@@ -74,12 +84,13 @@ static void _neko_XHandleMouseEvents();
 static void _neko_XHandleResize(neko_Window *p_win);
 
 /// Window configuration 
-static void _neko_GetAtoms(neko_Window *p_win);
 static void _neko_SendClientMessage(neko_Window *p_win, Atom msg_type, long *data);
-static void _neko_ApplySizeHints(neko_Window *p_win);
+static void _neko_UpdateWindowSize(neko_Window *p_win);
 
-/// Window creation
-static void _neko_CreateVkWindow(neko_Window *p_win);
-static void _neko_CreateGlWindow(neko_Window *p_win);
+/// OpenGL context creation
+static void _neko_CreateGLContext(neko_Window *p_win);
+
+/// Visual finder 
+static void _neko_GetVisualInfo(neko_Window *p_win);
 
 #endif

@@ -33,9 +33,6 @@ newoption {
 local libnwin = require("premake/libnwin")
 libnwin.build()
 
-local libnwinpp = require("premake/libnwinpp")
-libnwinpp.build()
-
 if not _OPTIONS["no-test-app"] then
     local glapp = require("premake/glapp")
     glapp.build()

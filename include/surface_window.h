@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 
+
 #ifdef __NEKO_SURFACE_C
     #include <stdlib.h>
     #include <stdbool.h>
@@ -24,6 +25,9 @@ extern "C" {
         #include <X11/XKBlib.h>
     #endif
 #endif
+
+/// Custom assertion macro with error message capability
+#define neko_assert(val, msg) (!val ? fprintf(stderr, "Assertion failed in file %s, line %u\n%s\n", __FILE__, __LINE__, msg), abort() : val);
 
 #include <glad/glad.h>
 #include <GL/glx.h>
@@ -77,15 +81,25 @@ typedef struct neko_VCData {
 #endif
 
 
+/// Initialise platform dependent backend api for nekowin library
+void neko_InitAPI();
+
 
 /// Create new platform independant neko_Window instance for vulkan
 /// This functions uses either Xlib or WIN32 api to create window depending on the operating system
-neko_Window *neko_InitSurfaceWindow(int32_t width, int32_t height, neko_Hint hints, const char *title);
+neko_Window *neko_NewWindow(int32_t width, int32_t height, neko_Hint hints, const char *title);
+
+
+VkResult neko_InitVKSurface(neko_Window *p_win, VkInstance i, VkSurfaceKHR s);
 
 
 /// Update window events and key arrays
 /// This function is meant to be called with every loop iteration 
 void neko_UpdateWindow(neko_Window *p_win);
+
+
+/// Set new resettable hints for neko window
+void neko_UpdateSizeMode(neko_Window *win, neko_Hint hints);
 
 
 /// Destroy window instance and free all resources that were used

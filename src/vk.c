@@ -3,8 +3,8 @@
 /// file: vk_ext.c - Vulkan extension finder source file
 /// author: Karl-Mihkel Ott
 
-#define __VK_EXT_C
-#include <vk_ext.h>
+#define __VK_C
+#include <vk.h>
 
 void neko_GetRequiredVKSurfaceExt(
     neko_Window *p_win,
@@ -40,21 +40,22 @@ void neko_GetRequiredVKSurfaceExt(
 
 VkResult neko_InitVKSurface (
     neko_Window *p_win, 
-    VkInstance *p_instance, 
-    VkSurfaceKHR *p_surface
+    VkInstance instance,
+    _neko_API,
+    VkSurfaceKHR surface
 ) {
     #ifdef __linux__
         VkXlibSurfaceCreateInfoKHR surface_info;
         surface_info.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
         surface_info.window = p_win->x11.window;
-        surface_info.dpy = p_win->x11.display;
+        surface_info.dpy = ;
         surface_info.flags = 0;
         surface_info.pNext = NULL;
 
         PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
-        vkCreateXlibSurfaceKHR = (PFN_vkCreateXlibSurfaceKHR) vkGetInstanceProcAddr(*p_instance, "vkCreateXlibSurfaceKHR");
+        vkCreateXlibSurfaceKHR = (PFN_vkCreateXlibSurfaceKHR) vkGetInstanceProcAddr(instance, "vkCreateXlibSurfaceKHR");
 
-        return vkCreateXlibSurfaceKHR(*p_instance, &surface_info, NULL, p_surface);
+        return vkCreateXlibSurfaceKHR(instance, &surface_info, NULL, &surface);
     #endif
 
     #ifdef _WIN32

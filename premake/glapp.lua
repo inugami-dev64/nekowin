@@ -16,7 +16,7 @@ function glapp.build()
             "include/*.h"
         }
         links { 
-            "nwinpp",
+            "nwin",
             "vulkan"
         }
 end

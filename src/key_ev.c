@@ -76,38 +76,8 @@ void _neko_RegisterKeyEvent (
             }
             else if(key >= NEKO_KEY_0 && key <= NEKO_KEY_9)
                 input_ch = key - NEKO_KEY_0 + '0';
-            else if(key >= NEKO_KEY_NP_0 && key <= NEKO_KEY_NP_9)
+            else if(key >= NEKO_KEY_NP_0 && key <= NEKO_KEY_NP_9) 
                 input_ch = key - NEKO_KEY_NP_0 + '0';
-            else if(!active_ev[NEKO_KEY_LEFT_SHIFT] && !active_ev[NEKO_KEY_RIGHT_SHIFT]) {
-                // More direct key value to ascii translation
-                switch(key) {
-                case NEKO_KEY_SPACE: 
-                    input_ch = ' ';
-                    break;
-                case NEKO_KEY_APOSTROPHE:
-                    input_ch = '\'';
-                    break;
-                case NEKO_KEY_COMMA:
-                    input_ch = ',';
-                    break;
-                case NEKO_KEY_DOT:
-                    input_ch = '.';
-                    break;
-                case NEKO_KEY_SLASH:
-                    input_ch = '/';
-                    break;
-                case NEKO_KEY_MINUS:
-                    input_ch = '-';
-                    break;
-                case NEKO_KEY_SEMICOLON:
-                    input_ch = ';';
-                    break;
-                case NEKO_KEY_EQUAL:
-                    input_ch = '=';
-                    break;
-                default: break;
-                }
-            }
             
             active_ev[key] = true;
             released_ev[key] = false;

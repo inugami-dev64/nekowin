@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include <glad/glad.h>
 #include <vulkan/vulkan.h>
@@ -174,11 +175,16 @@ void err_check(const std::string &func_name) {
 }
 
 
-void run(neko::Window &win) {
+void run(neko_Window *win) {
+    bool allow_toggle = true;
     while(neko_IsRunning()) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         err_check("glClearColor");
         glClear(GL_COLOR_BUFFER_BIT);
+
+        glViewport(0, 0, win->cwidth, win->cheight);
+
+
         err_check("glClear");
         glUseProgram(sh_program);
         err_check("glUseProgram");
@@ -186,7 +192,25 @@ void run(neko::Window &win) {
         err_check("glBindVertexArray");
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         err_check("glDrawElements");
-        win.update();
+
+
+        if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
+            allow_toggle = false;
+            if(win->hints & NEKO_HINT_FULL_SCREEN)
+                neko_UpdateSizeMode(win, NEKO_HINT_NO_FULL_SCREEN);
+            else if(win->hints & NEKO_HINT_NO_FULL_SCREEN) 
+                neko_UpdateSizeMode(win, NEKO_HINT_FULL_SCREEN);
+        }
+
+        else if(neko_FindKeyStatus(NEKO_KEY_Q, NEKO_INPUT_EVENT_TYPE_ACTIVE))
+            break;
+
+        else if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_RELEASED)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            allow_toggle = true;
+        }
+
+        neko_UpdateWindow(win);
 
         // Check for any errors during the frame generation
         err_check("glDrawElements");
@@ -196,11 +220,13 @@ void run(neko::Window &win) {
 }
 
 
-void cleanup() {
+void cleanup(neko_Window *win) {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ibo);
     glDeleteProgram(sh_program);
+
+    neko_DestroyWindow(win);
 }
 
 
@@ -213,7 +239,8 @@ int main() {
 
     
     // Create a new window
-    neko::Window win(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_FULL_SCREEN, "GLtest");
+    neko_InitAPI();
+    neko_Window *win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_FULL_SCREEN, "GLTest");
 
     int status = gladLoadGL();
     if(!status) {
@@ -224,8 +251,7 @@ int main() {
     compile_shaders();
     create_buffer_handles();
     run(win);
-
-    cleanup();
+    cleanup(win);
 
     return 0;
 }

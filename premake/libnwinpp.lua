@@ -21,6 +21,8 @@ function libnwinpp.build()
             "src/nwin.cpp"
         }
 
+        removefiles { "src/vk.c", "include/vk.h" }
+
         filter "platforms:Win32"
             removefiles { "src/x11_surface.c" }
             links {

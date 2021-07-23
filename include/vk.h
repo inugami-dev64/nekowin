@@ -3,8 +3,8 @@
 /// file: vk_ext.h - Vulkan extension finder header file
 /// author: Karl-Mihkel Ott
 
-#ifndef __VK_EXT_H
-#define __VK_EXT_H
+#ifndef __VK_H
+#define __VK_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,9 +13,9 @@ extern "C" {
 #define NEKO_VK_WSI_EXT_NAME "VK_KHR_surface"
 #define NEKO_VK_XLIB_SURFACE_EXT_NAME "VK_KHR_xlib_surface"
 #define NEKO_VK_WIN32_SURFACE_EXT_NAME "VK_KHR_win32_surface"
-#define NEKO_VK_DEBUG_UTILS_EXT_NAME "VK_EXT_debug_utils"
+#define NEKO_VK_DEBUG_UTILS_EXT_NAME "VK_debug_utils"
 
-#ifdef __VK_EXT_C
+#ifdef __VK_C
     #include <string.h> // strlen(), strcpy()
     #include <stdlib.h> // malloc(), calloc()
     #include <stdbool.h>
@@ -45,8 +45,9 @@ void neko_GetRequiredVKSurfaceExt (
 
 VkResult neko_InitVKSurface (
     neko_Window *p_window, 
-    VkInstance *p_instance, 
-    VkSurfaceKHR *p_surface
+    VkInstance instance, 
+    _neko_API,
+    VkSurfaceKHR surface
 );
 
 #ifdef __cplusplus

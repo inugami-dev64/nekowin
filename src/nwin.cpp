@@ -80,17 +80,17 @@ namespace neko {
         VkInstance &instance,
         VkSurfaceKHR &surface
     ) {
-        return neko_InitVKSurface(m_p_surface, &instance, &surface);
+        return neko_InitVKSurface(m_p_surface, instance, surface);
     }
 
 
     /// Find all required surface extensions
     char **Window::findVulkanSurfaceExtensions (
-        uint32_t *p_ext_c, 
+        size_t *p_ext_c, 
         bool enable_vl
     ) {
         char **exts;
-        neko_GetRequiredVKSurfaceExt(m_p_surface, &exts, p_ext_c, enable_vl);
+        neko_DefaultVulkanExtensions(&exts, p_ext_c, enable_vl);
 
         return exts;
     }
