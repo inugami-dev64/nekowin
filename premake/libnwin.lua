@@ -27,6 +27,7 @@ function libnwin.build()
             links {
                 "vulkan-1",
                 "comctl32",
+                "gdi32",
                 "iphlpapi"
             }
 
@@ -38,7 +39,8 @@ function libnwin.build()
                 "Xrandr",
                 "GL",
                 "GLU",
-                "dl"
+                "dl",
+                "vulkan"
             }
 
         filter {}

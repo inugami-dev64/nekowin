@@ -25,14 +25,12 @@
     #define NEKO_VK_DEBUG_UTILS_EXT_NAME    "VK_debug_utils"
 #endif
 
-#include <key_definitions.h>
-#include <key_ev.h>
 #include <surface_window.h>
 
-typedef struct Rectangle {
+typedef struct XY {
     uint64_t x;
     uint64_t y;
-} Rectangle;
+} XY;
 
 
 /// Toggle virtual cursor mode that locks real 
@@ -47,7 +45,7 @@ void neko_Update();
 void neko_GetPixelSize(neko_Window *win, float *x, float *y);
 
 
-Rectangle neko_FindDeltaMovement(neko_Window *win);
+XY neko_FindDeltaMovement(neko_Window *win);
 
 
 void neko_DefaultVulkanExtensions(char ***p_exts, size_t *ext_s, bool is_validation_layer);

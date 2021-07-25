@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <chrono>
 
 #include <glad/glad.h>
 #include <vulkan/vulkan.h>
-#include <nwin.hpp>
+#include <nwin.h>
 #define _LOG_SIZE   512
 
 
@@ -240,7 +241,7 @@ int main() {
     
     // Create a new window
     neko_InitAPI();
-    neko_Window *win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_FULL_SCREEN, "GLTest");
+    neko_Window *win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_FIXED_SIZE, "GLTest");
 
     int status = gladLoadGL();
     if(!status) {

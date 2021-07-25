@@ -11,7 +11,6 @@ extern "C" {
 #endif
 
 
-
 #ifdef __NEKO_SURFACE_C
     #include <stdlib.h>
     #include <stdbool.h>
@@ -26,12 +25,12 @@ extern "C" {
     #endif
 #endif
 
+
 /// Custom assertion macro with error message capability
-#define neko_assert(val, msg) (!val ? fprintf(stderr, "Assertion failed in file %s, line %u\n%s\n", __FILE__, __LINE__, msg), abort() : val);
+#define neko_assert(val, msg) (!val ? fprintf(stderr, "Assertion failed in %s:%u\n%s\n", __FILE__, __LINE__, msg), abort() : val);
 
 #include <glad/glad.h>
-#include <GL/glx.h>
-#include <key_definitions.h>
+#include <key_translation.h>
 #include <key_ev.h>
 
 #ifdef __NEKO_SURFACE_C
@@ -48,10 +47,16 @@ extern "C" {
     static neko_VCPOverflowAction __y_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
 
     // VCP cursor movement speed
-    static neko_MouseMode __mouse_mode = NEKO_MOUSE_MODE_CURSOR_VISIBLE;
     volatile sig_atomic_t __is_running;
 #endif
 
+/// Reserved for future use on X11
+typedef enum neko_CursorMode {
+    NEKO_CURSOR_MODE_STANDARD,
+    NEKO_CURSOR_MODE_WAITING,
+    NEKO_CURSOR_MODE_POINTER,
+    NEKO_CURSOR_MODE_HIDDEN
+} neko_CursorMode;
 
 /*
  * Virtual cursor (VC) position in DENG means that mouse cursor is stuck to certain position
@@ -79,6 +84,25 @@ typedef struct neko_VCData {
 #elif defined(_WIN32)
     #include <win32_surface.h>
 #endif
+
+/// Main structure for storing information about surface window and its parameters.
+typedef struct neko_Window {
+    int32_t cwidth;
+    int32_t cheight;
+    int32_t swidth;
+    int32_t sheight;
+    const char *window_title;
+    uint64_t mx;
+    uint64_t my;
+    neko_Hint hints;
+    neko_VCData vc_data;
+    neko_CursorMode cursor_mode;
+    #if defined(_WIN32)
+        neko_SurfaceWIN32 win32;
+    #elif defined(__linux__)
+        neko_SurfaceX11 x11;
+    #endif
+} neko_Window;
 
 
 /// Initialise platform dependent backend api for nekowin library
@@ -116,7 +140,7 @@ bool neko_IsRunning();
 /// Switch mouse cursor behaviour within the DENG window 
 void neko_SetMouseCursorMode (
     neko_Window* p_window,
-    neko_MouseMode mouse_mode
+    neko_CursorMode cur_mode
 );
 
 

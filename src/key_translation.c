@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define __KEY_TRANSLATION_C
-#include <key_definitions.h>
+#include <key_translation.h>
 
 #ifdef __linux__
 
@@ -151,7 +151,7 @@ neko_MouseButton translateX11Btn(uint32_t button) {
 /// WIN32 api key translations
 #ifdef _WIN32
 
-neko_Key translateWIN32Key(neko_ui16_t key_code) {
+neko_Key translateWIN32Key(uint16_t key_code) {
     switch(key_code) {
         case VK_SPACE:              return NEKO_KEY_SPACE;
         case VK_OEM_7:              return NEKO_KEY_APOSTROPHE;

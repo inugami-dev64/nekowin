@@ -26,6 +26,7 @@
 // X11 includes 
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#include <GL/glx.h>
 #include <X11/Xcursor/Xcursor.h>
 #include <X11/extensions/Xrandr.h>
 #include <vulkan/vulkan_xlib.h>
@@ -46,20 +47,8 @@ typedef struct _neko_SurfaceX11 {
 } neko_SurfaceX11;
 
 
-/// Main structure for storing information about surface window and its parameters.
-typedef struct neko_Window {
-    int32_t cwidth;
-    int32_t cheight;
-    int32_t swidth;
-    int32_t sheight;
-    const char *window_title;
-    uint64_t mx;
-    uint64_t my;
-    neko_Hint hints;
-    bool is_opengl;
-    neko_VCData vc_data;
-    neko_SurfaceX11 x11;
-} neko_Window;
+// Forward declaration for function types
+typedef struct neko_Window;
 
 #ifdef __NEKO_SURFACE_C 
     // Structure for containing all API specific information 

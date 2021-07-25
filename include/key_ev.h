@@ -27,7 +27,7 @@ extern "C" {
         #include <Windows.h>
     #endif
 
-    #include <key_definitions.h>
+    #include <key_translation.h>
     #include <surface_window.h>
 
 

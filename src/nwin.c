@@ -28,8 +28,8 @@ void neko_GetPixelSize(neko_Window *win, float *x, float *y) {
 }
 
 
-Rectangle neko_FindDeltaMovement(neko_Window *win) {
-    Rectangle rect = { 0 };
+XY neko_FindDeltaMovement(neko_Window *win) {
+    XY rect = { 0 };
     if(win->vc_data.is_enabled) {
         rect.x = win->vc_data.x - __prev_x;
         rect.y = win->vc_data.y - __prev_y;
