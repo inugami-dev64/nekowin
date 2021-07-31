@@ -13,9 +13,21 @@ static HCURSOR _old_cursor = NULL;
 void neko_InitAPI() {
     // TODO: Load wgl function pointers
     _neko_API.instance = LoadLibraryA("opengl32.dll");
-    _neko_API.CreateContext = (PFN_wglCreateContext) GetProcAddress(_neko_API.instance, "wglCreateContext");
-    _neko_API.DeleteContext = (PFN_wglDeleteContext) GetProcAddress(_neko_API.instance, "wglDeleteContext");
-    _neko_API.MakeCurrent = (PFN_wglMakeCurrent) GetProcAddress(_neko_API.instance, "wglMakeCurrent");
+    neko_assert(_neko_API.instance, "Failed to open opengl32.dll");
+
+    _neko_API.wgl.CreateContext = (PFN_wglCreateContext) GetProcAddress(_neko_API.instance, "wglCreateContext");
+    _neko_API.wgl.DeleteContext = (PFN_wglDeleteContext) GetProcAddress(_neko_API.instance, "wglDeleteContext");
+    _neko_API.wgl.MakeCurrent = (PFN_wglMakeCurrent) GetProcAddress(_neko_API.instance, "wglMakeCurrent");
+    _neko_API.wgl.GetProcAddress = (PFN_wglGetProcAddress) GetProcAddress(_neko_API.instance, "wglGetProcAddress");
+    _neko_API.wgl.GetCurrentContext = (PFN_wglGetCurrentContext) GetProcAddress(_neko_API.instance, "wglGetCurrentContext");
+    _neko_API.wgl.GetCurrentDC = (PFN_wglGetCurrentDC) GetProcAddress(_neko_API.instance, "wglGetCurrentDC");
+
+    printf("wglCreateContext(): %p\n", _neko_API.wgl.CreateContext);
+    printf("wglDeleteContext(): %p\n", _neko_API.wgl.DeleteContext);
+    printf("wglMakeCurrent(): %p\n", _neko_API.wgl.MakeCurrent);
+    printf("wglGetProcAddress(): %p\n", _neko_API.wgl.GetProcAddress);
+    printf("wglGetCurrentContext(): %p\n", _neko_API.wgl.GetCurrentContext);
+    printf("wglGetCurrentDC(): %p\n", _neko_API.wgl.GetCurrentDC);
 }
 
 
@@ -44,7 +56,7 @@ neko_Window *neko_NewWindow (
     class.hInstance = win.win32.instance = GetModuleHandleW(NULL);
     class.lpszClassName = __NEKO_CLASS_NAME;
 
-    _neko_ZeroValueErrorHandler((ULONG) RegisterClassEx(&class), "Failed to register neko window class");
+    _neko_ZeroValueErrorHandler((ULONG) RegisterClassEx(&class), (ULONG) __LINE__, "Failed to register neko window class");
 
 
     // Check size hints and resize accordingly
@@ -63,7 +75,7 @@ neko_Window *neko_NewWindow (
     // Free all memory allocated for the wide title
     free(w_title);
     free(w_cname);
-    _neko_ZeroValueErrorHandler((ULONG) win.win32.handle, "Failed to initialise win32 window");
+    _neko_ZeroValueErrorHandler(pcast(ULONG, win.win32.handle), (ULONG) __LINE__, "Failed to initialise win32 window");
 
     win.win32.rids[0].usUsagePage = 0x01;
     win.win32.rids[0].usUsage = 0x02;
@@ -76,11 +88,11 @@ neko_Window *neko_NewWindow (
     win.win32.rids[1].hwndTarget = win.win32.handle;
 
     BOOL rid_stat = RegisterRawInputDevices(win.win32.rids, 2, sizeof(win.win32.rids[0]));
-    _neko_ZeroValueErrorHandler((ULONG) rid_stat, "Failed to register raw input devices");
+    _neko_ZeroValueErrorHandler((ULONG) rid_stat, (ULONG) __LINE__, "Failed to register raw input devices");
 
     // Create OpenGL context if necessary
-    // if(win.hints & NEKO_HINT_API_OPENGL)
-    //    _neko_CreateGLContext(&win);
+    if(win.hints & NEKO_HINT_API_OPENGL)
+        _neko_CreateGLContext(&win);
 
     win.mx = 0;
     win.my = 0;
@@ -104,9 +116,6 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
     neko_MouseButton btn;
 
     switch(msg) {  
-        case WM_CREATE:
-            _neko_CreateGLContext(handle);
-            break;
         case WM_CLOSE:
         case WM_DESTROY:
             __is_running = false;
@@ -198,29 +207,169 @@ static void _neko_HandleSizeHints(neko_Window *win, DWORD *ws) {
 }
 
 
-static void _neko_CreateGLContext(HWND hWnd) {
-    PIXELFORMATDESCRIPTOR pfd = {
-        sizeof(PIXELFORMATDESCRIPTOR),
-        1,
-        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-        PFD_TYPE_RGBA, 
-        32,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        24,
-        8,
-        0,
-        PFD_MAIN_PLANE,
-        0,
-        0, 0, 0
-    };
+static void _neko_CreateGLContext(neko_Window *win) {
+    // If needed create a wgl dummy window and load wgl extensions
+    if(!_neko_API.wgl.is_init) 
+        _neko_LoadWGL(win);
+    
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
+    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 32;
+    pfd.cDepthBits = 24;
+    pfd.cStencilBits = 8;
+    pfd.iLayerType = PFD_MAIN_PLANE;
 
-    HDC dc = GetDC(hWnd);
+    HDC handle_to_device_context = GetDC(win->win32.handle);
+    int px_format = ChoosePixelFormat(handle_to_device_context, &pfd);
+    SetPixelFormat(handle_to_device_context, px_format, &pfd);
+    int attribs[__NEKO_WGL_PF_ATTRIB_C] = { 0 };
+
+
+    // TODO: Check if WGL_ARB_create_context extension is supported and create context using that extension when possible
+    if(_neko_API.wgl.ARB_create_context && _neko_API.wgl.ARB_create_context_profile) {
+        int index = 0, mask = 0;
+        
+        mask |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
+        if(_neko_API.wgl.ARB_context_flush_control) {
+            attribs[index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_ARB;
+            attribs[index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB;
+        }
+
+        // Set OpenGL version 
+        attribs[index++] = WGL_CONTEXT_MAJOR_VERSION_ARB;
+        attribs[index++] = OPENGL_SUPPORTED_MAJOR;
+
+        attribs[index++] = WGL_CONTEXT_MINOR_VERSION_ARB;
+        attribs[index++] = OPENGL_SUPPORTED_MINOR;
+
+        attribs[index++] = WGL_CONTEXT_PROFILE_MASK_ARB;
+        attribs[index++] = mask;
+
+        #ifdef _DEBUG_
+            int flags = WGL_CONTEXT_DEBUG_BIT_ARB;
+            attribs[index++] = WGL_CONTEXT_FLAGS_ARB;
+            attribs[index++] = flags;
+        #endif
+
+        _neko_ZeroValueErrorHandler(pcast(ULONG, win->win32.gl_context = _neko_API.wgl.CreateContextAttribsARB(handle_to_device_context, NULL, attribs)),
+                                    (ULONG) __LINE__,
+                                    "Failed to create WGL context using WGL_ARB_create_context extension");
+    }
+
+    else {
+        _neko_ZeroValueErrorHandler(pcast(ULONG, win->win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context)),
+                                    (ULONG) __LINE__,
+                                    "Failed to create WGL context using wglCreateContext function");
+    }
+
+    _neko_API.wgl.MakeCurrent(handle_to_device_context, win->win32.gl_context);
+}
+
+
+static void _neko_LoadWGL(neko_Window *win) {
+    _neko_API.wgl.is_init = TRUE;
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
+    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 24;
+
+    HDC dc = GetDC(NULL);
+
+    // Attempt to set pixel format for dummy context
     int pixel_format = ChoosePixelFormat(dc, &pfd);
-    SetPixelFormat(dc, pixel_format, &pfd);
+    _neko_ZeroValueErrorHandler((ULONG) SetPixelFormat(dc, pixel_format, &pfd), (ULONG) __LINE__, 
+                                 "Failed to set pixel format for dummy context");
 
-    HGLRC context = wglCreateContext(dc);
-    wglMakeCurrent(dc, context);
+    // Create and make use of the dummy context
+    HGLRC dummy_context = _neko_API.wgl.CreateContext(dc);
+    _neko_ZeroValueErrorHandler(pcast(ULONG, dummy_context), 
+                                (ULONG) __LINE__, 
+                                "Failed to create dummy context");
+
+    _neko_ZeroValueErrorHandler((ULONG) _neko_API.wgl.MakeCurrent(dc, dummy_context), 
+                                (ULONG) __LINE__, 
+                                "Failed to use correct wgl context");
+
+    // Load all required extension related functions
+    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.GetExtensionsStringEXT = (PFN_wglGetExtensionsStringEXT) _neko_API.wgl.GetProcAddress("wglGetExtensionsStringEXT")),
+                                (ULONG) __LINE__,
+                                "Failed to retrive wglGetExtensionsStringEXT()!");
+
+    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.GetExtensionsStringARB = (PFN_wglGetExtensionsStringARB) _neko_API.wgl.GetProcAddress("wglGetExtensionsStringARB")),
+                                (ULONG) __LINE__,
+                                "Failed to retrieve wglGetExtensionsStringARB()!");
+
+    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.SwapIntervalEXT = (PFN_wglSwapIntervalEXT) _neko_API.wgl.GetProcAddress("wglSwapIntervalEXT")), 
+                                (ULONG) __LINE__,
+                                "Failed to retrieve wglSwapIntervalEXT()!");
+
+    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.GetPixelFormatAttribivARB = (PFN_wglGetPixelFormatAttribivARB) _neko_API.wgl.GetProcAddress("wglGetPixelFormatAttribivARB")),
+                                (ULONG) __LINE__,
+                                "Failed to retrieve wglGetPixelFormatAttribivARB()!");
+
+    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.CreateContextAttribsARB = (PFN_wglCreateContextAttribsARB) _neko_API.wgl.GetProcAddress("wglCreateContextAttribsARB")),
+                                (ULONG) __LINE__,
+                                "Failed to retrieve wglCreateContextAttribsARB()!");
+
+
+    printf("wglSwapIntervalExt(): 0x%p\n", _neko_API.wgl.SwapIntervalEXT);
+    printf("wglGetPixelFormatAttribivARB(): 0x%p\n", _neko_API.wgl.GetPixelFormatAttribivARB);
+    printf("wglGetExtensionsStringEXT(): 0x%p\n", _neko_API.wgl.GetExtensionsStringEXT);
+    printf("wglGetExtensionsStringARB(): 0x%p\n", _neko_API.wgl.GetExtensionsStringARB);
+    printf("wglCreateContextAttribsARB(): 0x%p\n", _neko_API.wgl.CreateContextAttribsARB);
+
+    _neko_LoadWGLExtensions();
+    _neko_API.wgl.DeleteContext(dummy_context);
+}
+
+
+static void _neko_LoadWGLExtensions() {
+    _neko_API.wgl.EXT_swap_control                  =   _neko_FindExtensionSupport("WGL_EXT_swap_control");
+    _neko_API.wgl.ARB_multisample                   =   _neko_FindExtensionSupport("WGL_ARB_multisample");
+    _neko_API.wgl.ARB_framebuffer_sRGB              =   _neko_FindExtensionSupport("WGL_ARB_framebuffer_sRGB");
+    _neko_API.wgl.EXT_framebuffer_sRGB              =   _neko_FindExtensionSupport("WGL_EXT_framebuffer_sRGB");
+    _neko_API.wgl.ARB_pixel_format                  =   _neko_FindExtensionSupport("WGL_ARB_pixel_format");
+    _neko_API.wgl.ARB_create_context                =   _neko_FindExtensionSupport("WGL_ARB_create_context");
+    _neko_API.wgl.ARB_create_context_profile        =   _neko_FindExtensionSupport("WGL_ARB_create_context_profile");
+    _neko_API.wgl.EXT_create_context_es2_profile    =   _neko_FindExtensionSupport("WGL_EXT_create_context_es2_profile");
+    _neko_API.wgl.ARB_create_context_robustness     =   _neko_FindExtensionSupport("WGL_ARB_create_context_robustness");
+    _neko_API.wgl.ARB_create_context_no_error       =   _neko_FindExtensionSupport("WGL_ARB_create_context_no_error");
+    _neko_API.wgl.ARB_context_flush_control         =   _neko_FindExtensionSupport("WGL_ARB_context_flush_control");
+
+    printf("WGL_EXT_swap_control: %u\n", _neko_API.wgl.EXT_swap_control);
+    printf("WGL_ARB_multisample: %u\n", _neko_API.wgl.ARB_multisample);
+    printf("WGL_ARB_framebuffer_sRGB: %u\n", _neko_API.wgl.ARB_framebuffer_sRGB);
+    printf("WGL_EXT_framebuffer_sRGB: %u\n", _neko_API.wgl.EXT_framebuffer_sRGB);
+    printf("WGL_ARB_pixel_format: %u\n", _neko_API.wgl.ARB_pixel_format);
+    printf("WGL_ARB_create_context: %u\n", _neko_API.wgl.ARB_create_context);
+    printf("WGL_ARB_create_context_profile: %u\n", _neko_API.wgl.ARB_create_context_profile);
+    printf("WGL_EXT_create_context_es2_profile: %u\n", _neko_API.wgl.EXT_create_context_es2_profile);
+    printf("WGL_ARB_create_context_robustness: %u\n", _neko_API.wgl.ARB_create_context_robustness);
+    printf("WGL_ARB_create_context_no_error: %u\n", _neko_API.wgl.ARB_create_context_no_error);
+    printf("WGL_ARB_context_flush_control: %u\n", _neko_API.wgl.ARB_context_flush_control);
+}
+
+
+static BOOL _neko_FindExtensionSupport(const char *ext) {
+    const char *extensions = _neko_API.wgl.GetExtensionsStringARB(_neko_API.wgl.GetCurrentDC());
+    neko_assert(extensions, "Failed to retrieve any extensions from the extension list");
+
+    const char *pt;
+    char *max = (char*) (extensions + strlen(extensions));
+
+    while(TRUE) {
+        pt = strstr(extensions, ext);
+        if(!pt) break;
+        if(pt && (pt > extensions ? *(pt - 1) == ' ' : pt == extensions) && (pt + strlen(ext) < max))
+            return TRUE;
+    }
+
+    return FALSE;
 }
 
 
@@ -242,11 +391,12 @@ static WCHAR *_neko_CreateWideStringFromUTF8(const char *str) {
 }
 
 
-static void _neko_ZeroValueErrorHandler(ULONG val, const char *err_msg) {
+static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_msg) {
     if(!val) {
         DWORD code = GetLastError();
-        fprintf(stderr, "Error code: 0x%lx\n", code);
-        neko_assert(val, err_msg);
+        fprintf(stderr, "Error code: 0x%08lx\n", code);
+        fprintf(stderr, "%s:%lu; %s\n", __FILE__, __LINE__, err_msg);
+        exit(-1);
     }
 }
 
@@ -272,7 +422,7 @@ void neko_UpdateSizeMode(neko_Window *win, neko_Hint hints) {
 
 /// Update window events and key arrays
 /// This function is meant to be called with every loop iteration 
-void neko_UpdateWindow(neko_Window *p_win) {
+void neko_UpdateWindow(neko_Window *win) {
     // Find the scroll event status
     bool is_scr_up = neko_FindKeyStatus(
         NEKO_MOUSE_SCROLL_UP,
@@ -303,21 +453,26 @@ void neko_UpdateWindow(neko_Window *p_win) {
         );
     }
     _neko_UnreleaseKeys();
-    ShowWindow(p_win->win32.handle, SW_NORMAL);
+    ShowWindow(win->win32.handle, SW_NORMAL);
+
+    if(win->hints & NEKO_HINT_API_OPENGL) {
+        HDC dc = GetDC(win->win32.handle);
+        SwapBuffers(dc);
+    }
 
     if (!__is_running) return;
-    while(PeekMessageW(&p_win->win32.message, NULL, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&p_win->win32.message);
-        DispatchMessage(&p_win->win32.message);
+    while(PeekMessageW(&win->win32.message, NULL, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&win->win32.message);
+        DispatchMessage(&win->win32.message);
     }
 }
 
 
 /// Destroy window instance and free all resources that were used
-void neko_DestroyWindow(neko_Window *p_win) {
-    if(p_win->hints & NEKO_HINT_API_OPENGL)
-        wglDeleteContext(p_win->win32.gl_context);
-    DestroyWindow(p_win->win32.handle);
+void neko_DestroyWindow(neko_Window *win) {
+    if(win->hints & NEKO_HINT_API_OPENGL)
+        _neko_API.wgl.DeleteContext(win->win32.gl_context);
+    DestroyWindow(win->win32.handle);
 }
 
 
@@ -362,32 +517,32 @@ void neko_SetMouseCursorMode (
 /// Set mouse coordinates to certain position
 /// This function is used to force set mouse cursor position
 void neko_SetMouseCoords (
-    neko_Window *p_win, 
+    neko_Window *win, 
     uint64_t x, 
     uint64_t y
 ) {
     POINT pnt;
     pnt.x = (LONG) x;
     pnt.y = (LONG) y;
-    ClientToScreen(p_win->win32.handle, &pnt);
+    ClientToScreen(win->win32.handle, &pnt);
     SetCursorPos((int) pnt.x, (int) pnt.y);
-    if(!p_win->vc_data.is_enabled) {
-        p_win->mx = (LONG) x;
-        p_win->my = (LONG) y;
+    if(!win->vc_data.is_enabled) {
+        win->mx = (LONG) x;
+        win->my = (LONG) y;
     }
 }
 
 
 void neko_GetMousePos (
-    neko_Window *p_win, 
+    neko_Window *win, 
     bool init_vc
 ) {
     POINT point;
     
     // Check if GetCursorPos and ScreenToClient calls are successful and update original positions
-    if(GetCursorPos(&point) && ScreenToClient(p_win->win32.handle, &point)) {
-        p_win->mx = point.x;
-        p_win->my = point.y;
+    if(GetCursorPos(&point) && ScreenToClient(win->win32.handle, &point)) {
+        win->mx = point.x;
+        win->my = point.y;
     }
 
     else {
@@ -396,55 +551,55 @@ void neko_GetMousePos (
     }
     
     // Check if virtual mouse positioning is enabled
-    if(p_win->vc_data.is_enabled && !init_vc) {
-        uint64_t movement_x = (point.x - p_win->vc_data.orig_x);
-        uint64_t movement_y = (point.y - p_win->vc_data.orig_y);
+    if(win->vc_data.is_enabled && !init_vc) {
+        uint64_t movement_x = (point.x - win->vc_data.orig_x);
+        uint64_t movement_y = (point.y - win->vc_data.orig_y);
 
         // Check if cursor should be set to the origin position
-        if(point.x  != (LONG) p_win->vc_data.orig_x || point.y  != (LONG) p_win->vc_data.orig_y) {
+        if(point.x  != (LONG) win->vc_data.orig_x || point.y  != (LONG) win->vc_data.orig_y) {
             neko_SetMouseCoords (
-                p_win, 
-                p_win->vc_data.orig_x, 
-                p_win->vc_data.orig_y
+                win, 
+                win->vc_data.orig_x, 
+                win->vc_data.orig_y
             );
         }
 
         // Check if overflow is detected on x position
-        if (p_win->vc_data.x + movement_x >= __max_vc_x) {
+        if (win->vc_data.x + movement_x >= __max_vc_x) {
             if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                p_win->vc_data.x = __min_vc_x;
+                win->vc_data.x = __min_vc_x;
         }
 
-        else if (p_win->vc_data.x + movement_x < __min_vc_x) {
+        else if (win->vc_data.x + movement_x < __min_vc_x) {
             if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                p_win->vc_data.x = __max_vc_x;
+                win->vc_data.x = __max_vc_x;
         }
 
-        else p_win->vc_data.x += movement_x;
+        else win->vc_data.x += movement_x;
 
         // Check if overflow is detected on y position
-        if (p_win->vc_data.y + movement_y >= __max_vc_y) {
+        if (win->vc_data.y + movement_y >= __max_vc_y) {
             if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                p_win->vc_data.y = __min_vc_y;
+                win->vc_data.y = __min_vc_y;
         }
 
-        else if (p_win->vc_data.y + movement_y < __min_vc_y) {
+        else if (win->vc_data.y + movement_y < __min_vc_y) {
             if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                p_win->vc_data.y = __max_vc_y;
+                win->vc_data.y = __max_vc_y;
         }
 
-        else p_win->vc_data.y += movement_y;
+        else win->vc_data.y += movement_y;
     }
 
     // Check if virtual mouse position initialisation is neccesary
     else if(init_vc) {
-        p_win->mx = p_win->vc_data.orig_x;
-        p_win->my = p_win->vc_data.orig_y;
+        win->mx = win->vc_data.orig_x;
+        win->my = win->vc_data.orig_y;
 
         neko_SetMouseCoords (
-            p_win, 
-            p_win->mx, 
-            p_win->my
+            win, 
+            win->mx, 
+            win->my
         );
     }
 }

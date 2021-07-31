@@ -26,8 +26,13 @@ extern "C" {
 #endif
 
 
-/// Custom assertion macro with error message capability
+/// Custom macros
 #define neko_assert(val, msg) (!val ? fprintf(stderr, "Assertion failed in %s:%u\n%s\n", __FILE__, __LINE__, msg), abort() : val);
+#define pcast(T, src) ((T) ((uint64_t) (src)))
+
+/// OpenGL version definition macros
+#define OPENGL_SUPPORTED_MAJOR  4
+#define OPENGL_SUPPORTED_MINOR  6
 
 #include <glad/glad.h>
 #include <key_translation.h>

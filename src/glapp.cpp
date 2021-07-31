@@ -182,7 +182,6 @@ void run(neko_Window *win) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         err_check("glClearColor");
         glClear(GL_COLOR_BUFFER_BIT);
-
         glViewport(0, 0, win->cwidth, win->cheight);
 
 
@@ -248,6 +247,9 @@ int main() {
         std::cerr << "Failed to load OpenGL functions" << std::endl;
         std::exit(-1);
     }
+
+    const unsigned char *ver = glGetString(GL_VERSION);
+    printf("Context supported: %s\n", ver);
 
     compile_shaders();
     create_buffer_handles();
