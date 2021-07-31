@@ -6,3 +6,5 @@ compile_commands.json
 *.make
 obj
 tags
+*.vcxproj*
+*.sln

@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glapp", "glapp.vcxproj", "{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nwin", "nwin.vcxproj", "{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Linux = Debug|Linux
+		Debug|Win32 = Debug|Win32
+		Release|Linux = Release|Linux
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Debug|Linux.ActiveCfg = Debug Linux|x64
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Debug|Linux.Build.0 = Debug Linux|x64
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Debug|Win32.ActiveCfg = Debug Win32|x64
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Debug|Win32.Build.0 = Debug Win32|x64
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Release|Linux.ActiveCfg = Release Linux|x64
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Release|Linux.Build.0 = Release Linux|x64
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Release|Win32.ActiveCfg = Release Win32|x64
+		{79C0830F-E5D4-ABC0-AE56-4F201A2AA8F1}.Release|Win32.Build.0 = Release Win32|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Debug|Linux.ActiveCfg = Debug Linux|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Debug|Linux.Build.0 = Debug Linux|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Debug|Win32.ActiveCfg = Debug Win32|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Debug|Win32.Build.0 = Debug Win32|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Release|Linux.ActiveCfg = Release Linux|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Release|Linux.Build.0 = Release Linux|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Release|Win32.ActiveCfg = Release Win32|x64
+		{61699B7C-4DA0-9C0D-F68C-8210E2A2180F}.Release|Win32.Build.0 = Release Win32|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
