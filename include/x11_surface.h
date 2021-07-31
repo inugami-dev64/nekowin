@@ -48,7 +48,7 @@ typedef struct _neko_SurfaceX11 {
 
 
 // Forward declaration for function types
-typedef struct neko_Window;
+typedef struct neko_Window neko_Window;
 
 #ifdef __NEKO_SURFACE_C 
     // Structure for containing all API specific information 
