@@ -7,9 +7,6 @@
 #include <surface_window.h>
 
 
-static HCURSOR _old_cursor = NULL;
-
-
 void neko_InitAPI() {
     // TODO: Load wgl function pointers
     _neko_API.instance = LoadLibraryA("opengl32.dll");
@@ -56,7 +53,9 @@ neko_Window *neko_NewWindow (
     class.hInstance = win.win32.instance = GetModuleHandleW(NULL);
     class.lpszClassName = __NEKO_CLASS_NAME;
 
-    _neko_ZeroValueErrorHandler((ULONG) RegisterClassEx(&class), (ULONG) __LINE__, "Failed to register neko window class");
+    _neko_ZeroValueErrorHandler((ULONG) RegisterClassEx(&class), 
+                                (ULONG) __LINE__, 
+                                "Failed to register neko window class");
 
 
     // Check size hints and resize accordingly
@@ -195,10 +194,16 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
 
 
 static void _neko_HandleSizeHints(neko_Window *win, DWORD *ws) {
-    if(win->hints & NEKO_HINT_FIXED_SIZE)
+    if(win->hints & NEKO_HINT_FIXED_SIZE) {
         *ws = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
-    else if(win->hints & NEKO_HINT_RESIZEABLE)
-        *ws = WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
+        win->cwidth = win->swidth;
+        win->cheight = win->cheight;
+    }
+    else if(win->hints & NEKO_HINT_RESIZEABLE) {
+        *ws = WS_OVERLAPPEDWINDOW;
+        win->cwidth = win->swidth;
+        win->cheight = win->sheight;
+    }
     if(win->hints & NEKO_HINT_FULL_SCREEN) {
         win->cwidth = GetSystemMetrics(SM_CXSCREEN);
         win->cheight = GetSystemMetrics(SM_CYSCREEN);
@@ -232,7 +237,7 @@ static void _neko_CreateGLContext(neko_Window *win) {
     if(_neko_API.wgl.ARB_create_context && _neko_API.wgl.ARB_create_context_profile) {
         int index = 0, mask = 0;
         
-        mask |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
+        mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
         if(_neko_API.wgl.ARB_context_flush_control) {
             attribs[index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_ARB;
             attribs[index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB;
@@ -406,17 +411,14 @@ void neko_UpdateSizeMode(neko_Window *win, neko_Hint hints) {
         win->hints = hints | NEKO_HINT_API_OPENGL;
     else if(win->hints & NEKO_HINT_API_VULKAN)
         win->hints = hints | NEKO_HINT_API_VULKAN;
-    else win->hints = hints;
 
     DWORD ws;
     _neko_HandleSizeHints(win, &ws);
 
-    // Retrieve information about the current window rectangle
-    RECT wrect; 
-    neko_assert(GetWindowRect(win->win32.handle, &wrect), "Failed to retrieve information from GetWindowRect()");
+    if(win->hints & NEKO_HINT_FULL_SCREEN)
+        MoveWindow(win->win32.handle, 0, 0, win->cwidth, win->cheight, TRUE);
+    else MoveWindow(win->win32.handle, win->cposx, win->cposy, win->cwidth, win->cheight, TRUE);
     SetWindowLongPtr(win->win32.handle, GWL_STYLE, ws);
-    SetWindowPos(win->win32.handle, HWND_TOPMOST, wrect.left, wrect.top, 
-                 win->cwidth, win->cheight, SWP_SHOWWINDOW);
 }
 
 
@@ -454,6 +456,17 @@ void neko_UpdateWindow(neko_Window *win) {
     }
     _neko_UnreleaseKeys();
     ShowWindow(win->win32.handle, SW_NORMAL);
+
+
+    // NOTE: I am not sure how much of a overhead GetWindowRect possesses, but for now I guess it is okay
+    if(!(win->hints & NEKO_HINT_FULL_SCREEN)) {
+        RECT win_rect = { 0 };
+        GetWindowRect(win->win32.handle, &win_rect);
+        win->cwidth = (int32_t) (win_rect.right - win_rect.left);
+        win->cheight = (int32_t) (win_rect.bottom - win_rect.top);
+        win->cposx = (int32_t) win_rect.left;
+        win->cposy = (int32_t) win_rect.top;
+    }
 
     if(win->hints & NEKO_HINT_API_OPENGL) {
         HDC dc = GetDC(win->win32.handle);

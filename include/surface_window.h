@@ -64,7 +64,7 @@ typedef enum neko_CursorMode {
 } neko_CursorMode;
 
 /*
- * Virtual cursor (VC) position in DENG means that mouse cursor is stuck to certain position
+ * Virtual cursor (VC) position in nekowin means that mouse cursor is stuck to certain position
  * and is only allowed to move within one frame cycle.
  * That also means that the recorded mouse position is not corresponding to the real
  * position of mouse cursor.
@@ -94,6 +94,8 @@ typedef struct neko_VCData {
 typedef struct neko_Window {
     int32_t cwidth;
     int32_t cheight;
+    int32_t cposx;
+    int32_t cposy;
     int32_t swidth;
     int32_t sheight;
     const char *window_title;

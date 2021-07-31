@@ -196,10 +196,14 @@ void run(neko_Window *win) {
 
         if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;
-            if(win->hints & NEKO_HINT_FULL_SCREEN)
+            if(win->hints & NEKO_HINT_FULL_SCREEN) {
                 neko_UpdateSizeMode(win, NEKO_HINT_NO_FULL_SCREEN);
-            else if(win->hints & NEKO_HINT_NO_FULL_SCREEN) 
+                printf("Switching to full screen\n");
+            }
+            else if(win->hints & NEKO_HINT_NO_FULL_SCREEN) {
                 neko_UpdateSizeMode(win, NEKO_HINT_FULL_SCREEN);
+                printf("Switching to resizeable format\n");
+            }
         }
 
         else if(neko_FindKeyStatus(NEKO_KEY_Q, NEKO_INPUT_EVENT_TYPE_ACTIVE))
@@ -240,7 +244,7 @@ int main() {
     
     // Create a new window
     neko_InitAPI();
-    neko_Window *win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_FIXED_SIZE, "GLTest");
+    neko_Window *win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, "GLTest");
 
     int status = gladLoadGL();
     if(!status) {

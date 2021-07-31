@@ -26,9 +26,7 @@ function libnwin.build()
             removefiles { "src/x11_surface.c" }
             links {
                 "vulkan-1",
-                "comctl32",
                 "gdi32",
-                "iphlpapi"
             }
 
         filter "platforms:Linux"

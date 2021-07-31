@@ -15,9 +15,7 @@ function glapp.build()
             "src/glapp.cpp",
             "include/*.h"
         }
-        links { 
-            "nwin"
-        }
+        links { "nwin" }
 end
 
 return glapp
