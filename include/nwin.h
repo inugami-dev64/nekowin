@@ -1,6 +1,6 @@
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
 /// licence: Apache, see LICENCE.md
-/// file: surface_window.h - abstracted surface window header file
+/// file: nwin.h - abstracted surface window header file
 /// author: Karl-Mihkel Ott
 
 #ifndef __NWIN_H
@@ -43,19 +43,18 @@ extern "C" {
 
     // Global static varible declarations
     // Specify maximum and minimum virtual cursor positions
-    static uint64_t __min_vc_x = INT64_MIN;
-    static uint64_t __max_vc_x = INT64_MAX;
-    static uint64_t __min_vc_y = INT64_MIN;
-    static uint64_t __max_vc_y = INT64_MAX;
+    uint64_t __min_vc_x = INT64_MIN;
+    uint64_t __max_vc_x = INT64_MAX;
+    uint64_t __min_vc_y = INT64_MIN;
+    uint64_t __max_vc_y = INT64_MAX;
 
-    static uint64_t __prev_x = 0;
-    static uint64_t __prev_y = 0;
+    uint64_t __prev_x = 0;
+    uint64_t __prev_y = 0;
 
     // VCP overflow action specifiers
-    static neko_VCPOverflowAction __x_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
-    static neko_VCPOverflowAction __y_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
+    neko_VCPOverflowAction __x_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
+    neko_VCPOverflowAction __y_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
 
-    // VCP cursor movement speed
     volatile sig_atomic_t __is_running;
 
     // Vulkan extension name macros
@@ -136,8 +135,6 @@ typedef struct neko_VCData {
     uint32_t wslot_reserved = 0;
 
 #endif
-
-typedef uint32_t neko_Window;
 
 
 /**************************/
