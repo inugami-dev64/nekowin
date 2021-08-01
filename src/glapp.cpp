@@ -278,7 +278,7 @@ int main() {
     neko_InitAPI();
     neko_Window win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, "GLTest");
 
-    int status = gladLoadGL();
+    int status = neko_LoadGL();
     if(!status) {
         std::cerr << "Failed to load OpenGL functions" << std::endl;
         std::exit(-1);

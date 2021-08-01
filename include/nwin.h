@@ -35,6 +35,8 @@ extern "C" {
 #define OPENGL_SUPPORTED_MAJOR  4
 #define OPENGL_SUPPORTED_MINOR  6
 
+#define neko_LoadGL gladLoadGL
+
 #include <glad/glad.h>
 #include <key_translation.h>
 #include <key_ev.h>
