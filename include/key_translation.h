@@ -215,6 +215,15 @@ typedef enum neko_MouseDeltaMovement {
 } neko_MouseDeltaMovement;
 
 
+/// Enumeral values for nekowin cursors
+typedef enum neko_CursorMode {
+    NEKO_CURSOR_MODE_STANDARD,
+    NEKO_CURSOR_MODE_WAITING,
+    NEKO_CURSOR_MODE_POINTER,
+    NEKO_CURSOR_MODE_HIDDEN
+} neko_CursorMode;
+
+
 /// NOTE: In DENG all active input device events are masked into a single 64bit integer with the input event index being
 /// 8 bits wide. This means that the 64 bit integer can store up to 8 different masked events, which allows to create
 /// keybindings with up to 8 keys very efficiently.

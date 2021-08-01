@@ -120,6 +120,7 @@ VkResult neko_InitVKSurface (
     vkCreateXlibSurfaceKHR = (PFN_vkCreateXlibSurfaceKHR) vkGetInstanceProcAddr(instance, "vkCreateXlibSurfaceKHR");
 
     return vkCreateXlibSurfaceKHR(instance, &surface_info, NULL, &surface);
+
 } 
 
 
@@ -268,39 +269,6 @@ void neko_UpdateMousePos (
     else {
         wslots[win].mx = (uint64_t) x;
         wslots[win].my = (uint64_t) y;
-    }
-}
-
-
-void neko_ToggleVCMode(neko_Window win) {
-    wslots[win].vc_data.is_enabled = !wslots[win].vc_data.is_enabled;
-}
-
-
-void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y) {
-    *x = wslots[win].cwidth;
-    *y = wslots[win].cheight;
-}
-
-
-void neko_GetWindowHints(neko_Window win, neko_Hint *hints) {
-    *hints = wslots[win].hints;
-}
-
-
-void neko_GetPixelSize(neko_Window win, float *x, float *y) {
-    *x = 2.0f / (float) wslots[win].cwidth;
-    *y = 2.0f / (float) wslots[win].cheight;
-}
-
-
-void neko_FindDeltaMovement(neko_Window win, uint64_t *x, uint64_t *y) {
-    if(wslots[win].vc_data.is_enabled) {
-        *x = wslots[win].vc_data.x - __prev_x;
-        *y = wslots[win].vc_data.y - __prev_y;
-    } else {
-        *x = wslots[win].mx - __prev_x;
-        *y = wslots[win].my - __prev_y;
     }
 }
 

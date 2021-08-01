@@ -65,41 +65,8 @@ extern "C" {
 #endif
 
 
-/// Enumeral values for nekowin cursors
-typedef enum neko_CursorMode {
-    NEKO_CURSOR_MODE_STANDARD,
-    NEKO_CURSOR_MODE_WAITING,
-    NEKO_CURSOR_MODE_POINTER,
-    NEKO_CURSOR_MODE_HIDDEN
-} neko_CursorMode;
 
-
-/*
- * Virtual cursor (VC) position in nekowin means that mouse cursor is stuck to certain position
- * and is only allowed to move within one frame cycle.
- * That also means that the recorded mouse position is not corresponding to the real
- * position of mouse cursor.
- */
-typedef struct neko_VCData {
-   bool is_enabled;
-    #ifdef __linux__
-        char * cursor;
-        bool is_lib_cur;
-    #endif
-    // X and Y virtual position are in 64bit floating point integer since 
-    // Arithmetic operation with these types are needed in camera classes
-    uint64_t x;
-    uint64_t y;
-    uint64_t orig_x;
-    uint64_t orig_y;
-} neko_VCData;
-
-
-#if defined(__linux__)
-    #include <x11_surface.h>
-#elif defined(_WIN32)
-    #include <win32_surface.h>
-#endif
+typedef uint32_t neko_Window;
 
 
 /* 
@@ -107,33 +74,10 @@ typedef struct neko_VCData {
  * The API end user is given a handle to created window instance, which is just a index to the window in the window slot
  */
 #ifdef __NWIN_C
-    // This macro can be redefined if for some reason more windows are needed
-    #define _MAX_WSLOT_C    16
-
-    /// Main structure for storing information about surface window and its parameters.
-    typedef struct _neko_Window {
-        int32_t cwidth;
-        int32_t cheight;
-        int32_t cposx;
-        int32_t cposy;
-        int32_t swidth;
-        int32_t sheight;
-        const char * window_title;
-        uint64_t mx;
-        uint64_t my;
-        neko_Hint hints;
-        neko_VCData vc_data;
-        neko_CursorMode cursor_mode;
-        #if defined(_WIN32)
-            neko_SurfaceWIN32 win32;
-        #elif defined(__linux__)
-            neko_SurfaceX11 x11;
-        #endif
-    } _neko_Window;
+    #include <window.h>   
 
     _neko_Window wslots[_MAX_WSLOT_C] = { 0 };
     uint32_t wslot_reserved = 0;
-
 #endif
 
 
@@ -154,7 +98,7 @@ neko_Window neko_NewWindow(int32_t width, int32_t height, neko_Hint hints, const
 
 
 /// Initialise the given neko_Window instance for Vulkan surface 
-VkResult neko_InitVKSurface(neko_Window win, VkInstance i, VkSurfaceKHR s);
+VkResult neko_InitVKSurface(neko_Window win, VkInstance i, VkSurfaceKHR *s);
 
 
 /// Update window events and key arrays
@@ -178,7 +122,7 @@ bool neko_IsRunning();
 /****** Input device communication ******/
 /****************************************/
 
-/// Switch mouse cursor behaviour within the DENG window 
+/// Change mouse cursor mode within neko window
 void neko_SetMouseCursorMode(neko_Window win, neko_CursorMode cur_mode);
 
 
@@ -190,38 +134,10 @@ void neko_SetMouseCoords(neko_Window win, uint64_t x, uint64_t y);
 void neko_UpdateMousePos(neko_Window win, bool init_vc);
 
 
-/// Toggle virtual cursor mode that locks the real cursor movement within the window instance
-void neko_ToggleVCMode(neko_Window win);
-
-
-/// Find the current window size
-void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y);
-
-
-void neko_GetWindowHints(neko_Window win, neko_Hint *hints);
-
-
-/// Find the pixel size in vector units from -1.0 to 1.0
-void neko_GetPixelSize(neko_Window win, float *x, float *y);
-
-
-/// Find delta mouse movement between current and previous frames
-void neko_FindDeltaMovement(neko_Window win, uint64_t *x, uint64_t *y);
-
-
 /// Acquire all required Vulkan extension strings
 void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s, bool use_validation_layers);
 
-
-/// Limit the largest and smallest virtual cursor position that can be achieved using 
-/// virtual cursor positioning (VCP)
-void neko_LimitVirtualPos(uint64_t max_x, uint64_t min_x, uint64_t max_y, uint64_t min_y);
-
-
-/// Set virtual mouse position overflow actions that specify what
-/// should happen if virtual mouse position limit has been reached
-void neko_SetOverflowAction(neko_VCPOverflowAction x_overflow_act, neko_VCPOverflowAction y_overflow_act);
-
+#include <napi.h>
 
 #ifdef __cplusplus
 }

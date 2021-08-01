@@ -3,9 +3,13 @@
 /// file: win32.c - win32 window / surface creation handler header file
 /// author: Karl-Mihkel Ott
 
-#define __NEKO_SURFACE_C
-#include <surface_window.h>
+#define __NWIN_C
+#include <nwin.h>
 
+
+/*******************************/
+/******* NEKO API CALLS ********/
+/*******************************/
 
 void neko_InitAPI() {
     // TODO: Load wgl function pointers
@@ -19,38 +23,44 @@ void neko_InitAPI() {
     _neko_API.wgl.GetCurrentContext = (PFN_wglGetCurrentContext) GetProcAddress(_neko_API.instance, "wglGetCurrentContext");
     _neko_API.wgl.GetCurrentDC = (PFN_wglGetCurrentDC) GetProcAddress(_neko_API.instance, "wglGetCurrentDC");
 
-    printf("wglCreateContext(): %p\n", _neko_API.wgl.CreateContext);
-    printf("wglDeleteContext(): %p\n", _neko_API.wgl.DeleteContext);
-    printf("wglMakeCurrent(): %p\n", _neko_API.wgl.MakeCurrent);
-    printf("wglGetProcAddress(): %p\n", _neko_API.wgl.GetProcAddress);
-    printf("wglGetCurrentContext(): %p\n", _neko_API.wgl.GetCurrentContext);
-    printf("wglGetCurrentDC(): %p\n", _neko_API.wgl.GetCurrentDC);
+    _neko_API.cursors.standard = LoadCursorA(NULL, IDC_ARROW);
+    _neko_API.cursors.pointer = LoadCursorA(NULL, IDC_HAND);
+    _neko_API.cursors.waiting = LoadCursorA(NULL, IDC_WAIT);
+    _neko_API.cursors.hidden = NULL;
+}
+
+
+void neko_DeinitAPI() {
+    DestroyCursor(_neko_API.cursors.standard);
+    DestroyCursor(_neko_API.cursors.pointer);
+    DestroyCursor(_neko_API.cursors.waiting);
 }
 
 
 /// Create new platform independant neko_Window instance for vulkan
-neko_Window *neko_NewWindow (
+neko_Window neko_NewWindow (
     int32_t width,
     int32_t height, 
     neko_Hint hints,
     const char *title
 ) {
-    static neko_Window win = { 0 };
+    neko_assert(wslot_reserved + 1 >= _MAX_WSLOT_C, "There are no free window slots available");
+    neko_Window win = (wslot_reserved++);
 
-    win.cwidth = win.swidth = width;
-    win.cheight = win.sheight = height;
-    win.hints = hints;
-    win.window_title = title;
-    win.vc_data.is_enabled = false;
-    win.vc_data.orig_x = width / 2;
-    win.vc_data.orig_y = height / 2;
+    wslots[win].cwidth = wslots[win].swidth = width;
+    wslots[win].cheight = wslots[win].sheight = height;
+    wslots[win].hints = hints;
+    wslots[win].window_title = title;
+    wslots[win].vc_data.is_enabled = false;
+    wslots[win].vc_data.orig_x = width / 2;
+    wslots[win].vc_data.orig_y = height / 2;
 
     DWORD window_style;
     WNDCLASSEX class = { 0 };
     class.cbSize = sizeof(class);
     class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     class.lpfnWndProc = _neko_Win32MessageHandler;
-    class.hInstance = win.win32.instance = GetModuleHandleW(NULL);
+    class.hInstance = wslots[win].win32.instance = GetModuleHandleW(NULL);
     class.lpszClassName = __NEKO_CLASS_NAME;
 
     _neko_ZeroValueErrorHandler((ULONG) RegisterClassEx(&class), 
@@ -59,49 +69,303 @@ neko_Window *neko_NewWindow (
 
 
     // Check size hints and resize accordingly
-    _neko_HandleSizeHints(&win, &window_style);
+    _neko_HandleSizeHints(win, &window_style);
 
-    LPWSTR w_title = _neko_CreateWideStringFromUTF8(win.window_title);
+    LPWSTR w_title = _neko_CreateWideStringFromUTF8(wslots[win].window_title);
     LPWSTR w_cname = _neko_CreateWideStringFromUTF8(__NEKO_CLASS_NAME);
-    win.win32.handle = CreateWindowExW(0, w_cname, w_title, 
+    wslots[win].win32.handle = CreateWindowExW(0, w_cname, w_title, 
                                        window_style, 
                                        0, 
                                        0, 
-                                       win.cwidth, win.cheight, 
+                                       wslots[win].cwidth, wslots[win].cheight, 
                                        NULL, NULL, 
-                                       win.win32.instance, NULL);
+                                       wslots[win].win32.instance, NULL);
                                     
     // Free all memory allocated for the wide title
     free(w_title);
     free(w_cname);
-    _neko_ZeroValueErrorHandler(pcast(ULONG, win.win32.handle), (ULONG) __LINE__, "Failed to initialise win32 window");
+    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.handle), (ULONG) __LINE__, "Failed to initialise win32 window");
 
-    win.win32.rids[0].usUsagePage = 0x01;
-    win.win32.rids[0].usUsage = 0x02;
-    win.win32.rids[0].dwFlags = 0;
-    win.win32.rids[0].hwndTarget = win.win32.handle;
+    wslots[win].win32.rids[0].usUsagePage = 0x01;
+    wslots[win].win32.rids[0].usUsage = 0x02;
+    wslots[win].win32.rids[0].dwFlags = 0;
+    wslots[win].win32.rids[0].hwndTarget = wslots[win].win32.handle;
 
-    win.win32.rids[1].usUsagePage = 0x01;
-    win.win32.rids[1].usUsage = 0x06;
-    win.win32.rids[1].dwFlags = 0;
-    win.win32.rids[1].hwndTarget = win.win32.handle;
+    wslots[win].win32.rids[1].usUsagePage = 0x01;
+    wslots[win].win32.rids[1].usUsage = 0x06;
+    wslots[win].win32.rids[1].dwFlags = 0;
+    wslots[win].win32.rids[1].hwndTarget = wslots[win].win32.handle;
 
-    BOOL rid_stat = RegisterRawInputDevices(win.win32.rids, 2, sizeof(win.win32.rids[0]));
+    BOOL rid_stat = RegisterRawInputDevices(wslots[win].win32.rids, 2, sizeof(wslots[win].win32.rids[0]));
     _neko_ZeroValueErrorHandler((ULONG) rid_stat, (ULONG) __LINE__, "Failed to register raw input devices");
 
     // Create OpenGL context if necessary
-    if(win.hints & NEKO_HINT_API_OPENGL)
-        _neko_CreateGLContext(&win);
+    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
+        _neko_CreateGLContext(win);
 
-    win.mx = 0;
-    win.my = 0;
+    wslots[win].mx = 0;
+    wslots[win].my = 0;
 
-    win.vc_data.orig_x = (int64_t)(win.cwidth / 2);
-    win.vc_data.orig_y = (int64_t)(win.cheight / 2);
+    wslots[win].vc_data.orig_x = (int64_t)(wslots[win].cwidth / 2);
+    wslots[win].vc_data.orig_y = (int64_t)(wslots[win].cheight / 2);
 
 	__is_running = true;
-    return &win;
+    return win;
 }
+
+
+VkResult neko_InitVKSurface(neko_Window win, VkInstance i, VkSurfaceKHR *s) {
+    VkWin32SurfaceCreateInfoKHR surface_info;
+    surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    surface_info.hinstance = wslots[win].win32.instance;
+    surface_info.hwnd = wslots[win].win32.handle;
+    surface_info.pNext = NULL;
+    
+    PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+    vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR) vkGetInstanceProcAddr(i, "vkCreateWin32SurfaceKHR");
+
+    return vkCreateWin32SurfaceKHR(i, &surface_info, NULL, s);
+}
+
+
+/// Update window events and key arrays
+/// This function is meant to be called with every loop iteration 
+void neko_UpdateWindow(neko_Window win) {
+    // Find the scroll event status
+    bool is_scr_up = neko_FindKeyStatus(
+        NEKO_MOUSE_SCROLL_UP,
+        NEKO_INPUT_EVENT_TYPE_ACTIVE
+    );
+
+    bool is_scr_down = neko_FindKeyStatus (
+        NEKO_MOUSE_SCROLL_DOWN,
+        NEKO_INPUT_EVENT_TYPE_ACTIVE
+    );
+
+    // Check if scroll events have occured
+    if (is_scr_up) {
+        _neko_RegisterKeyEvent (
+            NEKO_KEY_UNKNOWN,
+            NEKO_MOUSE_SCROLL_UP,
+            NEKO_INPUT_TYPE_MOUSE,
+            NEKO_INPUT_EVENT_TYPE_RELEASED
+        );
+    }
+
+    if (is_scr_down) {
+        _neko_RegisterKeyEvent (
+            NEKO_KEY_UNKNOWN,
+            NEKO_MOUSE_SCROLL_DOWN,
+            NEKO_INPUT_TYPE_MOUSE,
+            NEKO_INPUT_EVENT_TYPE_RELEASED
+        );
+    }
+    _neko_UnreleaseKeys();
+    ShowWindow(wslots[win].win32.handle, SW_NORMAL);
+
+
+    // NOTE: I am not sure how much of a overhead GetWindowRect possesses, but for now I guess it is okay
+    if(!(wslots[win].hints & NEKO_HINT_FULL_SCREEN)) {
+        RECT win_rect = { 0 };
+        GetWindowRect(wslots[win].win32.handle, &win_rect);
+        wslots[win].cwidth = (int32_t) (win_rect.right - win_rect.left);
+        wslots[win].cheight = (int32_t) (win_rect.bottom - win_rect.top);
+        wslots[win].cposx = (int32_t) win_rect.left;
+        wslots[win].cposy = (int32_t) win_rect.top;
+    }
+
+    if(wslots[win].hints & NEKO_HINT_API_OPENGL) {
+        HDC dc = GetDC(wslots[win].win32.handle);
+        SwapBuffers(dc);
+    }
+
+    if (!__is_running) return;
+    while(PeekMessageW(&wslots[win].win32.message, NULL, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&wslots[win].win32.message);
+        DispatchMessage(&wslots[win].win32.message);
+    }
+}
+
+
+/// Set new resettable hints for neko window
+void neko_UpdateSizeMode(neko_Window win, neko_Hint hints) {
+    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
+        wslots[win].hints = hints | NEKO_HINT_API_OPENGL;
+    else if(wslots[win].hints & NEKO_HINT_API_VULKAN)
+        wslots[win].hints = hints | NEKO_HINT_API_VULKAN;
+
+    DWORD ws;
+    _neko_HandleSizeHints(win, &ws);
+
+    if(wslots[win].hints & NEKO_HINT_FULL_SCREEN)
+        MoveWindow(wslots[win].win32.handle, 0, 0, wslots[win].cwidth, wslots[win].cheight, TRUE);
+    else MoveWindow(wslots[win].win32.handle, wslots[win].cposx, wslots[win].cposy, wslots[win].cwidth, wslots[win].cheight, TRUE);
+    SetWindowLongPtr(wslots[win].win32.handle, GWL_STYLE, ws);
+}
+
+
+/// Destroy window instance and free all resources that were used
+void neko_DestroyWindow(neko_Window win) {
+    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
+        _neko_API.wgl.DeleteContext(wslots[win].win32.gl_context);
+    DestroyWindow(wslots[win].win32.handle);
+}
+
+
+/// Check if window is still running and no close events have happened
+bool neko_IsRunning() {
+    return __is_running;
+}
+
+
+/// Switch mouse cursor behaviour within the DENG window 
+void neko_SetMouseCursorMode (
+    neko_Window win, 
+    neko_CursorMode cur_mode
+) {
+    wslots[win].cursor_mode = cur_mode;
+
+    // Check if the cursor should be hidden
+    if(cur_mode == NEKO_CURSOR_MODE_HIDDEN)
+        ShowCursor(FALSE);
+    else ShowCursor(TRUE);
+
+    switch(cur_mode) {
+    case NEKO_CURSOR_MODE_STANDARD:
+        SetCursor(_neko_API.cursors.standard);
+        break;
+
+    case NEKO_CURSOR_MODE_POINTER:
+        SetCursor(_neko_API.cursors.pointer);
+        break;
+
+    case NEKO_CURSOR_MODE_WAITING:
+        SetCursor(_neko_API.cursors.waiting);
+        break;
+
+    case NEKO_CURSOR_MODE_HIDDEN:
+        SetCursor(_neko_API.cursors.hidden);
+        break;
+
+    default:
+        break;
+    }
+}
+
+
+/// Force mouse cursor to certain location on window
+void neko_SetMouseCoords (
+    neko_Window win, 
+    uint64_t x, 
+    uint64_t y
+) {
+    POINT pnt;
+    pnt.x = (LONG) x;
+    pnt.y = (LONG) y;
+    ClientToScreen(wslots[win].win32.handle, &pnt);
+    SetCursorPos((int) pnt.x, (int) pnt.y);
+    if(!wslots[win].vc_data.is_enabled) {
+        wslots[win].mx = (LONG) x;
+        wslots[win].my = (LONG) y;
+    }
+}
+
+
+void neko_UpdateMousePos (
+    neko_Window win, 
+    bool init_vc
+) {
+    POINT point;
+    
+    // Check if GetCursorPos and ScreenToClient calls are successful and update original positions
+    if(GetCursorPos(&point) && ScreenToClient(wslots[win].win32.handle, &point)) {
+        wslots[win].mx = point.x;
+        wslots[win].my = point.y;
+    }
+
+    else {
+        fprintf(stderr, "Failed to read WIN32 cursor\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Check if virtual mouse positioning is enabled
+    if(wslots[win].vc_data.is_enabled && !init_vc) {
+        uint64_t movement_x = (point.x - wslots[win].vc_data.orig_x);
+        uint64_t movement_y = (point.y - wslots[win].vc_data.orig_y);
+
+        // Check if cursor should be set to the origin position
+        if(point.x  != (LONG) wslots[win].vc_data.orig_x || point.y  != (LONG) wslots[win].vc_data.orig_y) {
+            neko_SetMouseCoords (
+                win, 
+                wslots[win].vc_data.orig_x, 
+                wslots[win].vc_data.orig_y
+            );
+        }
+
+        // Check if overflow is detected on x position
+        if (wslots[win].vc_data.x + movement_x >= __max_vc_x) {
+            if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.x = __min_vc_x;
+        }
+
+        else if (wslots[win].vc_data.x + movement_x < __min_vc_x) {
+            if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.x = __max_vc_x;
+        }
+
+        else wslots[win].vc_data.x += movement_x;
+
+        // Check if overflow is detected on y position
+        if (wslots[win].vc_data.y + movement_y >= __max_vc_y) {
+            if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.y = __min_vc_y;
+        }
+
+        else if (wslots[win].vc_data.y + movement_y < __min_vc_y) {
+            if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.y = __max_vc_y;
+        }
+
+        else wslots[win].vc_data.y += movement_y;
+    }
+
+    // Check if virtual mouse position initialisation is neccesary
+    else if(init_vc) {
+        wslots[win].mx = wslots[win].vc_data.orig_x;
+        wslots[win].my = wslots[win].vc_data.orig_y;
+
+        neko_SetMouseCoords (
+            win, 
+            wslots[win].mx, 
+            wslots[win].my
+        );
+    }
+}
+
+
+void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s, bool is_validation_layer) {
+    static char *sptr[3] = { 0 };
+    static char lexts[3][32] = { 0 };
+
+    *p_exts = sptr;
+    (*p_exts)[0] = lexts[0];
+    (*p_exts)[1] = lexts[1];
+    (*p_exts)[2] = lexts[2];
+
+    if(is_validation_layer) {
+        *ext_s = 3;
+        strcpy((*p_exts)[2], NEKO_VK_DEBUG_UTILS_EXT_NAME);
+    }
+
+    else *ext_s = 2;
+    strcpy((*p_exts)[0], NEKO_VK_WSI_EXT_NAME);
+    strcpy((*p_exts)[1], NEKO_VK_XLIB_SURFACE_EXT_NAME);
+}
+
+
+/*****************************/
+/****** Inner functions ******/
+/*****************************/
 
 
 /// WIN32 messenger callback
@@ -193,26 +457,26 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
 }
 
 
-static void _neko_HandleSizeHints(neko_Window *win, DWORD *ws) {
-    if(win->hints & NEKO_HINT_FIXED_SIZE) {
+static void _neko_HandleSizeHints(neko_Window win, DWORD *ws) {
+    if(wslots[win].hints & NEKO_HINT_FIXED_SIZE) {
         *ws = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
-        win->cwidth = win->swidth;
-        win->cheight = win->cheight;
+        wslots[win].cwidth = wslots[win].swidth;
+        wslots[win].cheight = wslots[win].cheight;
     }
-    else if(win->hints & NEKO_HINT_RESIZEABLE) {
+    else if(wslots[win].hints & NEKO_HINT_RESIZEABLE) {
         *ws = WS_OVERLAPPEDWINDOW;
-        win->cwidth = win->swidth;
-        win->cheight = win->sheight;
+        wslots[win].cwidth = wslots[win].swidth;
+        wslots[win].cheight = wslots[win].sheight;
     }
-    if(win->hints & NEKO_HINT_FULL_SCREEN) {
-        win->cwidth = GetSystemMetrics(SM_CXSCREEN);
-        win->cheight = GetSystemMetrics(SM_CYSCREEN);
+    if(wslots[win].hints & NEKO_HINT_FULL_SCREEN) {
+        wslots[win].cwidth = GetSystemMetrics(SM_CXSCREEN);
+        wslots[win].cheight = GetSystemMetrics(SM_CYSCREEN);
         *ws = WS_POPUP | WS_VISIBLE;
     }
 }
 
 
-static void _neko_CreateGLContext(neko_Window *win) {
+static void _neko_CreateGLContext(neko_Window win) {
     // If needed create a wgl dummy window and load wgl extensions
     if(!_neko_API.wgl.is_init) 
         _neko_LoadWGL(win);
@@ -227,7 +491,7 @@ static void _neko_CreateGLContext(neko_Window *win) {
     pfd.cStencilBits = 8;
     pfd.iLayerType = PFD_MAIN_PLANE;
 
-    HDC handle_to_device_context = GetDC(win->win32.handle);
+    HDC handle_to_device_context = GetDC(wslots[win].win32.handle);
     int px_format = ChoosePixelFormat(handle_to_device_context, &pfd);
     SetPixelFormat(handle_to_device_context, px_format, &pfd);
     int attribs[__NEKO_WGL_PF_ATTRIB_C] = { 0 };
@@ -259,22 +523,22 @@ static void _neko_CreateGLContext(neko_Window *win) {
             attribs[index++] = flags;
         #endif
 
-        _neko_ZeroValueErrorHandler(pcast(ULONG, win->win32.gl_context = _neko_API.wgl.CreateContextAttribsARB(handle_to_device_context, NULL, attribs)),
+        _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.gl_context = _neko_API.wgl.CreateContextAttribsARB(handle_to_device_context, NULL, attribs)),
                                     (ULONG) __LINE__,
                                     "Failed to create WGL context using WGL_ARB_create_context extension");
     }
 
     else {
-        _neko_ZeroValueErrorHandler(pcast(ULONG, win->win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context)),
+        _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context)),
                                     (ULONG) __LINE__,
                                     "Failed to create WGL context using wglCreateContext function");
     }
 
-    _neko_API.wgl.MakeCurrent(handle_to_device_context, win->win32.gl_context);
+    _neko_API.wgl.MakeCurrent(handle_to_device_context, wslots[win].win32.gl_context);
 }
 
 
-static void _neko_LoadWGL(neko_Window *win) {
+static void _neko_LoadWGL(neko_Window win) {
     _neko_API.wgl.is_init = TRUE;
     PIXELFORMATDESCRIPTOR pfd = { 0 };
     pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
@@ -322,11 +586,6 @@ static void _neko_LoadWGL(neko_Window *win) {
                                 "Failed to retrieve wglCreateContextAttribsARB()!");
 
 
-    printf("wglSwapIntervalExt(): 0x%p\n", _neko_API.wgl.SwapIntervalEXT);
-    printf("wglGetPixelFormatAttribivARB(): 0x%p\n", _neko_API.wgl.GetPixelFormatAttribivARB);
-    printf("wglGetExtensionsStringEXT(): 0x%p\n", _neko_API.wgl.GetExtensionsStringEXT);
-    printf("wglGetExtensionsStringARB(): 0x%p\n", _neko_API.wgl.GetExtensionsStringARB);
-    printf("wglCreateContextAttribsARB(): 0x%p\n", _neko_API.wgl.CreateContextAttribsARB);
 
     _neko_LoadWGLExtensions();
     _neko_API.wgl.DeleteContext(dummy_context);
@@ -345,18 +604,6 @@ static void _neko_LoadWGLExtensions() {
     _neko_API.wgl.ARB_create_context_robustness     =   _neko_FindExtensionSupport("WGL_ARB_create_context_robustness");
     _neko_API.wgl.ARB_create_context_no_error       =   _neko_FindExtensionSupport("WGL_ARB_create_context_no_error");
     _neko_API.wgl.ARB_context_flush_control         =   _neko_FindExtensionSupport("WGL_ARB_context_flush_control");
-
-    printf("WGL_EXT_swap_control: %u\n", _neko_API.wgl.EXT_swap_control);
-    printf("WGL_ARB_multisample: %u\n", _neko_API.wgl.ARB_multisample);
-    printf("WGL_ARB_framebuffer_sRGB: %u\n", _neko_API.wgl.ARB_framebuffer_sRGB);
-    printf("WGL_EXT_framebuffer_sRGB: %u\n", _neko_API.wgl.EXT_framebuffer_sRGB);
-    printf("WGL_ARB_pixel_format: %u\n", _neko_API.wgl.ARB_pixel_format);
-    printf("WGL_ARB_create_context: %u\n", _neko_API.wgl.ARB_create_context);
-    printf("WGL_ARB_create_context_profile: %u\n", _neko_API.wgl.ARB_create_context_profile);
-    printf("WGL_EXT_create_context_es2_profile: %u\n", _neko_API.wgl.EXT_create_context_es2_profile);
-    printf("WGL_ARB_create_context_robustness: %u\n", _neko_API.wgl.ARB_create_context_robustness);
-    printf("WGL_ARB_create_context_no_error: %u\n", _neko_API.wgl.ARB_create_context_no_error);
-    printf("WGL_ARB_context_flush_control: %u\n", _neko_API.wgl.ARB_context_flush_control);
 }
 
 
@@ -378,15 +625,6 @@ static BOOL _neko_FindExtensionSupport(const char *ext) {
 }
 
 
-/// Load all useable cursors
-static void _neko_LoadCursors(neko_Window *win) {
-    _neko_API.cursors.standard = LoadCursor(NULL, IDC_APPSTARTING);
-    _neko_API.cursors.pointer = LoadCursor(NULL, IDC_HAND);
-    _neko_API.cursors.waiting = LoadCursor(NULL, IDC_WAIT);
-    _neko_API.cursors.hidden = NULL;
-}
-
-
 static WCHAR *_neko_CreateWideStringFromUTF8(const char *str) {
     WCHAR *out_str = (WCHAR*) calloc(strlen(str) + 1, sizeof(WCHAR));
     for(size_t i = 0; i < strlen(str); i++)
@@ -400,245 +638,7 @@ static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_m
     if(!val) {
         DWORD code = GetLastError();
         fprintf(stderr, "Error code: 0x%08lx\n", code);
-        fprintf(stderr, "%s:%lu; %s\n", __FILE__, __LINE__, err_msg);
+        fprintf(stderr, "%s:%u; %s\n", __FILE__, __LINE__, err_msg);
         exit(-1);
     }
-}
-
-
-void neko_UpdateSizeMode(neko_Window *win, neko_Hint hints) {
-    if(win->hints & NEKO_HINT_API_OPENGL)
-        win->hints = hints | NEKO_HINT_API_OPENGL;
-    else if(win->hints & NEKO_HINT_API_VULKAN)
-        win->hints = hints | NEKO_HINT_API_VULKAN;
-
-    DWORD ws;
-    _neko_HandleSizeHints(win, &ws);
-
-    if(win->hints & NEKO_HINT_FULL_SCREEN)
-        MoveWindow(win->win32.handle, 0, 0, win->cwidth, win->cheight, TRUE);
-    else MoveWindow(win->win32.handle, win->cposx, win->cposy, win->cwidth, win->cheight, TRUE);
-    SetWindowLongPtr(win->win32.handle, GWL_STYLE, ws);
-}
-
-
-/// Update window events and key arrays
-/// This function is meant to be called with every loop iteration 
-void neko_UpdateWindow(neko_Window *win) {
-    // Find the scroll event status
-    bool is_scr_up = neko_FindKeyStatus(
-        NEKO_MOUSE_SCROLL_UP,
-        NEKO_INPUT_EVENT_TYPE_ACTIVE
-    );
-
-    bool is_scr_down = neko_FindKeyStatus (
-        NEKO_MOUSE_SCROLL_DOWN,
-        NEKO_INPUT_EVENT_TYPE_ACTIVE
-    );
-
-    // Check if scroll events have occured
-    if (is_scr_up) {
-        _neko_RegisterKeyEvent (
-            NEKO_KEY_UNKNOWN,
-            NEKO_MOUSE_SCROLL_UP,
-            NEKO_INPUT_TYPE_MOUSE,
-            NEKO_INPUT_EVENT_TYPE_RELEASED
-        );
-    }
-
-    if (is_scr_down) {
-        _neko_RegisterKeyEvent (
-            NEKO_KEY_UNKNOWN,
-            NEKO_MOUSE_SCROLL_DOWN,
-            NEKO_INPUT_TYPE_MOUSE,
-            NEKO_INPUT_EVENT_TYPE_RELEASED
-        );
-    }
-    _neko_UnreleaseKeys();
-    ShowWindow(win->win32.handle, SW_NORMAL);
-
-
-    // NOTE: I am not sure how much of a overhead GetWindowRect possesses, but for now I guess it is okay
-    if(!(win->hints & NEKO_HINT_FULL_SCREEN)) {
-        RECT win_rect = { 0 };
-        GetWindowRect(win->win32.handle, &win_rect);
-        win->cwidth = (int32_t) (win_rect.right - win_rect.left);
-        win->cheight = (int32_t) (win_rect.bottom - win_rect.top);
-        win->cposx = (int32_t) win_rect.left;
-        win->cposy = (int32_t) win_rect.top;
-    }
-
-    if(win->hints & NEKO_HINT_API_OPENGL) {
-        HDC dc = GetDC(win->win32.handle);
-        SwapBuffers(dc);
-    }
-
-    if (!__is_running) return;
-    while(PeekMessageW(&win->win32.message, NULL, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&win->win32.message);
-        DispatchMessage(&win->win32.message);
-    }
-}
-
-
-/// Destroy window instance and free all resources that were used
-void neko_DestroyWindow(neko_Window *win) {
-    if(win->hints & NEKO_HINT_API_OPENGL)
-        _neko_API.wgl.DeleteContext(win->win32.gl_context);
-    DestroyWindow(win->win32.handle);
-}
-
-
-/// Check if window is still running and no close events have happened
-bool neko_IsRunning() {
-    return __is_running;
-}
-
-/****************************************/
-/****** Input device communication ******/
-/****************************************/
-
-/// Switch mouse cursor behaviour within the DENG window 
-void neko_SetMouseCursorMode (
-    neko_Window *win, 
-    neko_CursorMode cur_mode
-) {
-    win->cursor_mode = cur_mode;
-    switch(cur_mode) {
-    case NEKO_CURSOR_MODE_STANDARD:
-        SetCursor(_neko_API.cursors.standard);
-        break;
-
-    case NEKO_CURSOR_MODE_POINTER:
-        SetCursor(_neko_API.cursors.pointer);
-        break;
-
-    case NEKO_CURSOR_MODE_WAITING:
-        SetCursor(_neko_API.cursors.waiting);
-        break;
-
-    case NEKO_CURSOR_MODE_HIDDEN:
-        SetCursor(_neko_API.cursors.hidden);
-        break;
-
-    default:
-        break;
-    }
-}
-
-
-/// Set mouse coordinates to certain position
-/// This function is used to force set mouse cursor position
-void neko_SetMouseCoords (
-    neko_Window *win, 
-    uint64_t x, 
-    uint64_t y
-) {
-    POINT pnt;
-    pnt.x = (LONG) x;
-    pnt.y = (LONG) y;
-    ClientToScreen(win->win32.handle, &pnt);
-    SetCursorPos((int) pnt.x, (int) pnt.y);
-    if(!win->vc_data.is_enabled) {
-        win->mx = (LONG) x;
-        win->my = (LONG) y;
-    }
-}
-
-
-void neko_GetMousePos (
-    neko_Window *win, 
-    bool init_vc
-) {
-    POINT point;
-    
-    // Check if GetCursorPos and ScreenToClient calls are successful and update original positions
-    if(GetCursorPos(&point) && ScreenToClient(win->win32.handle, &point)) {
-        win->mx = point.x;
-        win->my = point.y;
-    }
-
-    else {
-        fprintf(stderr, "Failed to read WIN32 cursor\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    // Check if virtual mouse positioning is enabled
-    if(win->vc_data.is_enabled && !init_vc) {
-        uint64_t movement_x = (point.x - win->vc_data.orig_x);
-        uint64_t movement_y = (point.y - win->vc_data.orig_y);
-
-        // Check if cursor should be set to the origin position
-        if(point.x  != (LONG) win->vc_data.orig_x || point.y  != (LONG) win->vc_data.orig_y) {
-            neko_SetMouseCoords (
-                win, 
-                win->vc_data.orig_x, 
-                win->vc_data.orig_y
-            );
-        }
-
-        // Check if overflow is detected on x position
-        if (win->vc_data.x + movement_x >= __max_vc_x) {
-            if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                win->vc_data.x = __min_vc_x;
-        }
-
-        else if (win->vc_data.x + movement_x < __min_vc_x) {
-            if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                win->vc_data.x = __max_vc_x;
-        }
-
-        else win->vc_data.x += movement_x;
-
-        // Check if overflow is detected on y position
-        if (win->vc_data.y + movement_y >= __max_vc_y) {
-            if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                win->vc_data.y = __min_vc_y;
-        }
-
-        else if (win->vc_data.y + movement_y < __min_vc_y) {
-            if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                win->vc_data.y = __max_vc_y;
-        }
-
-        else win->vc_data.y += movement_y;
-    }
-
-    // Check if virtual mouse position initialisation is neccesary
-    else if(init_vc) {
-        win->mx = win->vc_data.orig_x;
-        win->my = win->vc_data.orig_y;
-
-        neko_SetMouseCoords (
-            win, 
-            win->mx, 
-            win->my
-        );
-    }
-}
-
-
-/// Limit the largest and smallest virtual cursor position that can be achieved using 
-/// virtual mouse positioning
-void neko_LimitVirtualPos(
-    uint64_t max_x,
-    uint64_t min_x,
-    uint64_t max_y,
-    uint64_t min_y
-) {
-    __min_vc_x = min_x;
-    __max_vc_x = max_x;
-    __min_vc_y = min_y;
-    __max_vc_y = max_y;
-}
-
-
-/// Set virtual mouse position overflow actions that specify what
-/// should happen if virtual mouse position limit has been reached
-void neko_SetOverflowAction(
-    neko_VCPOverflowAction x_overflow_act,
-    neko_VCPOverflowAction y_overflow_act
-) {
-    __x_overflow_act = x_overflow_act;
-    __y_overflow_act = y_overflow_act;
 }

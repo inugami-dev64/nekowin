@@ -48,10 +48,6 @@ typedef struct _neko_SurfaceX11 {
 } neko_SurfaceX11;
 
 
-
-// Forward declaration for function types
-typedef uint32_t neko_Window;
-
 #ifdef __NWIN_C 
     /// Structure for storing all cursor data
     typedef struct _neko_XCursors {

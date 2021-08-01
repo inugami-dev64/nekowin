@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 #ifdef __KEY_EV_C
+    #include <stdio.h>
     #include <stdlib.h>
     #include <stdarg.h>   
     #include <stdint.h>

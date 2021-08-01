@@ -23,7 +23,8 @@ function libnwin.build()
         removefiles{ "src/vk.c", "include/vk.h" }
 
         filter "platforms:Win32"
-            removefiles { "src/x11_surface.c" }
+            removefiles { "src/x11_window.c" }
+            defines { "_CRT_SECURE_NO_WARNINGS" }
             links {
                 "vulkan-1",
                 "gdi32",

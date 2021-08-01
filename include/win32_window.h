@@ -6,10 +6,12 @@
 #ifndef __WIN32_SURFACE_H
 #define __WIN32_SURFACE_H
 
-#include <wingdi.h>
+#include <string.h>
 #include <windows.h>
+#include <wingdi.h>
 #include <synchapi.h>    
 #include <stdio.h>
+#include <vulkan/vulkan_win32.h>
 
 
 // Extension attribute values
@@ -33,7 +35,7 @@ typedef struct _neko_SurfaceWIN32 {
 } neko_SurfaceWIN32;
 
 
-#ifdef __NEKO_SURFACE_C
+#ifdef __NWIN_C
     typedef struct _neko_Cursors {
         HCURSOR standard;
         HCURSOR waiting;
@@ -95,23 +97,14 @@ typedef struct _neko_SurfaceWIN32 {
 #define __NEKO_WGL_PF_ATTRIB_C      40
 
 
-typedef struct neko_Window neko_Window;
-
-
-/// WIN32 message callback function 
-static LRESULT CALLBACK _neko_Win32MessageHandler(HWND hwnd, UINT msg, WPARAM param, LPARAM lparam);
-
-
 // Win32 implementation specific functions
-static void _neko_HandleSizeHints(neko_Window *win, DWORD *ws);
-
-static void _neko_CreateGLContext(neko_Window *win);
+static LRESULT CALLBACK _neko_Win32MessageHandler(HWND hwnd, UINT msg, WPARAM param, LPARAM lparam);
+static void _neko_HandleSizeHints(neko_Window win, DWORD *ws);
+static void _neko_CreateGLContext(neko_Window win);
 static int _neko_FindPixelFormat();
-static void _neko_LoadWGL(neko_Window *win);
+static void _neko_LoadWGL(neko_Window win);
 static void _neko_LoadWGLExtensions();
 static BOOL _neko_FindExtensionSupport(const char *ext);
-
-static void _neko_LoadCursors(neko_Window *win);
 static WCHAR *_neko_CreateWideStringFromUTF8(const char *title);
 static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_msg);
 #endif
