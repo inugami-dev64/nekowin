@@ -27,10 +27,12 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <GL/glx.h>
+#include <X11/cursorfont.h>
 #include <X11/Xcursor/Xcursor.h>
 #include <X11/extensions/Xrandr.h>
 #include <vulkan/vulkan_xlib.h>
 
+/// Commonly used atoms used in API instance structure
 typedef struct _neko_X11Atoms {
     Atom WM_DELETE_WINDOW;
     Atom _NET_WM_STATE;
@@ -39,7 +41,6 @@ typedef struct _neko_X11Atoms {
 
 
 typedef struct _neko_SurfaceX11 {
-    Cursor default_cursor;
     Window window;
     GC gc;
     XVisualInfo *p_vi;
@@ -47,39 +48,40 @@ typedef struct _neko_SurfaceX11 {
 } neko_SurfaceX11;
 
 
-// Forward declaration for function types
-typedef struct neko_Window neko_Window;
 
-#ifdef __NEKO_SURFACE_C 
-    // Structure for containing all API specific information 
+// Forward declaration for function types
+typedef uint32_t neko_Window;
+
+#ifdef __NWIN_C 
+    /// Structure for storing all cursor data
+    typedef struct _neko_XCursors {
+        Cursor standard;
+        Cursor waiting;
+        Cursor pointer;
+        Cursor hidden;
+    } _neko_XCursors;
+
+
+    /// Structure for containing all API specific information 
     struct {
         Display *display;
         XEvent fr_ev;
         _neko_X11Atoms atoms;
         Window root;
         int32_t scr;
+        _neko_XCursors cursors;
     } _neko_API;
 #endif
 
 
-/// Function declarations
-//static void _neko_XInitCursors(neko_Window *p_win);
-//static void _neko_XFreeCursors(neko_Window *p_win);
-//static void _neko_XSetCursor(neko_Window *p_win, bool hide);
-
-/// Generic window event handlers
-static void _neko_XHandleKeyEvents(); 
-static void _neko_XHandleMouseEvents(); 
-static void _neko_XHandleResize(neko_Window *p_win);
-
-/// Window configuration 
-static void _neko_SendClientMessage(neko_Window *p_win, Atom msg_type, long *data);
-static void _neko_UpdateWindowSize(neko_Window *p_win);
-
-/// OpenGL context creation
-static void _neko_CreateGLContext(neko_Window *p_win);
-
-/// Visual finder 
-static void _neko_GetVisualInfo(neko_Window *p_win);
+/// Inner function declarations 
+static void _neko_HandleKeyEvents(); 
+static void _neko_HandleMouseEvents(); 
+static void _neko_HandleResize(neko_Window win);
+static void _neko_GetVisualInfo(neko_Window win);
+static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data);
+static void _neko_UpdateWindowSize(neko_Window win);
+static void _neko_CreateGLContext(neko_Window win);
+static void _neko_LoadCursors();
 
 #endif

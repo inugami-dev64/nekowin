@@ -3,6 +3,7 @@ Makefile
 build
 compile_commands.json
 .vscode
+.vs
 *.make
 obj
 tags

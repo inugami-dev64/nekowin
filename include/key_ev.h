@@ -28,7 +28,7 @@ extern "C" {
     #endif
 
     #include <key_translation.h>
-    #include <surface_window.h>
+    #include <nwin.h>
 
 
     /// Key event registry arrays

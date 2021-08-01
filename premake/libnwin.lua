@@ -30,7 +30,7 @@ function libnwin.build()
             }
 
         filter "platforms:Linux"
-            removefiles { "src/win32_surface.c" }
+            removefiles { "src/win32_window.c" }
             links {
                 "X11",
                 "Xcursor",
