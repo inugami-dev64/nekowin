@@ -107,7 +107,7 @@ neko_Window neko_NewWindow (
 VkResult neko_InitVKSurface (
     neko_Window win, 
     VkInstance instance,
-    VkSurfaceKHR surface
+    VkSurfaceKHR *surface
 ) {
     VkXlibSurfaceCreateInfoKHR surface_info;
     surface_info.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
@@ -119,8 +119,7 @@ VkResult neko_InitVKSurface (
     PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
     vkCreateXlibSurfaceKHR = (PFN_vkCreateXlibSurfaceKHR) vkGetInstanceProcAddr(instance, "vkCreateXlibSurfaceKHR");
 
-    return vkCreateXlibSurfaceKHR(instance, &surface_info, NULL, &surface);
-
+    return vkCreateXlibSurfaceKHR(instance, &surface_info, NULL, surface);
 } 
 
 
@@ -306,32 +305,6 @@ void _neko_GetVisualInfo(neko_Window win) {
         wslots[win].x11.vi.visual = DefaultVisual(_neko_API.display, _neko_API.scr);
         wslots[win].x11.vi.depth = DefaultDepth(_neko_API.display, _neko_API.scr);
     }
-}
-
-
-/// Limit the largest and smallest virtual cursor position that can be achieved using 
-/// virtual mouse positioning
-void neko_LimitVirtualPos (
-    uint64_t max_x,       
-    uint64_t min_x,
-    uint64_t max_y,
-    uint64_t min_y
-) {
-    __max_vc_x = max_x;
-    __min_vc_x = min_x;
-    __max_vc_y = max_y;
-    __min_vc_y = min_y;
-}
-
-
-/// Set virtual mouse position overflow actions that specify what
-/// should happen if virtual mouse position limit has been reached
-void neko_SetOverflowAction (
-    neko_VCPOverflowAction x_overflow_act,
-    neko_VCPOverflowAction y_overflow_act
-) {
-    __x_overflow_act = x_overflow_act;
-    __y_overflow_act = y_overflow_act;
 }
 
 
