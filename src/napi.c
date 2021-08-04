@@ -1,5 +1,5 @@
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
-/// licence: Apache, see LICENCE.md
+/// licence: Apache, see LICENCE
 /// file: napi.h - source file for platform independant api calls
 /// author: Karl-Mihkel Ott
 
@@ -10,6 +10,11 @@
 
 void neko_ToggleVCMode(neko_Window win) {
     wslots[win].vc_data.is_enabled = !wslots[win].vc_data.is_enabled;
+}
+
+
+bool neko_IsVCMode(neko_Window win) {
+    return wslots[win].vc_data.is_enabled;
 }
 
 

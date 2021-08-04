@@ -1,5 +1,5 @@
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
-/// licence: Apache, see LICENCE.md
+/// licence: Apache, see LICENCE
 /// file: napi.h - header file for platform independant api calls
 /// author: Karl-Mihkel Ott
 
@@ -41,6 +41,10 @@
 
 /// Toggle virtual cursor mode that locks the real cursor movement within the window instance
 void neko_ToggleVCMode(neko_Window win);
+
+
+/// Check if virtual cursor mode is enabled or not
+bool neko_IsVCMode(neko_Window win);
 
 
 /// Find the current window size

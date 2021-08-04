@@ -37,7 +37,6 @@ function libnwin.build()
                 "Xcursor",
                 "Xrandr",
                 "GL",
-                "GLU",
                 "dl",
                 "vulkan"
             }
