@@ -47,6 +47,10 @@ void neko_ToggleVCMode(neko_Window win);
 bool neko_IsVCMode(neko_Window win);
 
 
+/// Explicitly set virtual cursor position
+void neko_SetVCPos(neko_Window win, int32_t x, int32_t y);
+
+
 /// Find the current window size
 void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y);
 

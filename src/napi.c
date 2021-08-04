@@ -18,6 +18,12 @@ bool neko_IsVCMode(neko_Window win) {
 }
 
 
+void neko_SetVCPos(neko_Window win, int32_t x, int32_t y) {
+    wslots[win].vc_data.x = x;
+    wslots[win].vc_data.y = y;
+}
+
+
 void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y) {
     *x = wslots[win].cwidth;
     *y = wslots[win].cheight;
