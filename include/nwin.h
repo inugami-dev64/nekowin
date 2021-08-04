@@ -18,7 +18,6 @@ extern "C" {
     #include <string.h>
     #include <signal.h>
     #include <limits.h>
-    #include <vulkan/vulkan.h>
 
     #ifdef __linux__
         #include <X11/keysym.h>
@@ -37,6 +36,7 @@ extern "C" {
 
 #define neko_LoadGL gladLoadGL
 
+#include <vulkan/vulkan.h>
 #include <glad/glad.h>
 #include <key_translation.h>
 #include <key_ev.h>
