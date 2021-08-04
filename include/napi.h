@@ -47,6 +47,9 @@ void neko_ToggleVCMode(neko_Window win);
 bool neko_IsVCMode(neko_Window win);
 
 
+const char *neko_GetTitle(neko_Window win);
+
+
 /// Find the current window size
 void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y);
 

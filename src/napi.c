@@ -18,6 +18,11 @@ bool neko_IsVCMode(neko_Window win) {
 }
 
 
+const char *neko_GetTitle(neko_Window win) {
+    return wslots[win].window_title;
+}
+
+
 void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y) {
     *x = wslots[win].cwidth;
     *y = wslots[win].cheight;
