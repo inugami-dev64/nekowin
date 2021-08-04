@@ -47,10 +47,6 @@ void neko_ToggleVCMode(neko_Window win);
 bool neko_IsVCMode(neko_Window win);
 
 
-/// Explicitly set virtual cursor position
-void neko_SetVCPos(neko_Window win, int32_t x, int32_t y);
-
-
 /// Find the current window size
 void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y);
 
@@ -61,6 +57,10 @@ void neko_GetWindowHints(neko_Window win, neko_Hint *hints);
 
 /// Find the pixel size in vector units from -1.0 to 1.0
 void neko_GetPixelSize(neko_Window win, float *x, float *y);
+
+
+/// Get the current mouse position on the window
+void neko_GetMousePos(neko_Window win, uint64_t *x, uint64_t *y);
 
 
 /// Find delta mouse movement between current and previous frames

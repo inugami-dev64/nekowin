@@ -18,12 +18,6 @@ bool neko_IsVCMode(neko_Window win) {
 }
 
 
-void neko_SetVCPos(neko_Window win, int32_t x, int32_t y) {
-    wslots[win].vc_data.x = x;
-    wslots[win].vc_data.y = y;
-}
-
-
 void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y) {
     *x = wslots[win].cwidth;
     *y = wslots[win].cheight;
@@ -38,6 +32,17 @@ void neko_GetWindowHints(neko_Window win, neko_Hint *hints) {
 void neko_GetPixelSize(neko_Window win, float *x, float *y) {
     *x = 2.0f / (float) wslots[win].cwidth;
     *y = 2.0f / (float) wslots[win].cheight;
+}
+
+
+void neko_GetMousePos(neko_Window win, uint64_t *x, uint64_t *y) {
+    if(wslots[win].vc_data.is_enabled) {
+        *x = wslots[win].vc_data.x;
+        *y = wslots[win].vc_data.y;
+    } else {
+        *x = wslots[win].mx;
+        *y = wslots[win].my;
+    }
 }
 
 
