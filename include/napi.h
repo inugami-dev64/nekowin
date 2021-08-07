@@ -39,6 +39,10 @@
 /****** API bindings ******/
 /**************************/
 
+/// Explicitly change virtual cursor mode
+void neko_ChangeVCMode(bool is_vcp, neko_Window win);
+
+
 /// Toggle virtual cursor mode that locks the real cursor movement within the window instance
 void neko_ToggleVCMode(neko_Window win);
 
@@ -47,6 +51,7 @@ void neko_ToggleVCMode(neko_Window win);
 bool neko_IsVCMode(neko_Window win);
 
 
+/// Get window title
 const char *neko_GetTitle(neko_Window win);
 
 
