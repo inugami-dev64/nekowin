@@ -8,7 +8,7 @@
 #include <napi.h>
 
 
-void neko_ChangeVCMode(bool is_vcp) {
+void neko_ChangeVCMode(bool is_vcp, neko_Window win) {
     wslots[win].vc_data.is_enabled = is_vcp;
 }
 
