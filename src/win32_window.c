@@ -27,6 +27,7 @@ void neko_InitAPI() {
     _neko_API.cursors.pointer = LoadCursorA(NULL, IDC_HAND);
     _neko_API.cursors.waiting = LoadCursorA(NULL, IDC_WAIT);
     _neko_API.cursors.hidden = NULL;
+    _neko_API.is_init = true;
 }
 
 

@@ -2,7 +2,7 @@
 /// licence: Apache, see LICENCE.md
 /// file: x11_surface.h - x11 window / surface creation handler header file
 /// author: Karl-Mihkel Ott
-//
+
 #ifndef __X11_SURFACE_H
 #define __X11_SURFACE_H
 
@@ -60,13 +60,14 @@ typedef struct _neko_SurfaceX11 {
 
     /// Structure for containing all API specific information 
     struct {
+        bool is_init;
         Display *display;
         XEvent fr_ev;
         _neko_X11Atoms atoms;
         Window root;
         int32_t scr;
         _neko_XCursors cursors;
-    } _neko_API;
+    } _neko_API = { 0 };
 #endif
 
 

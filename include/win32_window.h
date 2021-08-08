@@ -87,10 +87,11 @@ typedef struct _neko_SurfaceWIN32 {
     } WGL;
 
     struct {
+        bool is_init;
         HINSTANCE instance;
         WGL wgl;
         _neko_Cursors cursors;
-    } _neko_API; 
+    } _neko_API = { 0 };
 #endif
 
 #define __NEKO_CLASS_NAME           "NWIN"

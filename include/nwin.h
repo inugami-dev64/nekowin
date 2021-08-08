@@ -63,7 +63,7 @@ extern "C" {
     #define NEKO_VK_WSI_EXT_NAME            "VK_KHR_surface"
     #define NEKO_VK_XLIB_SURFACE_EXT_NAME   "VK_KHR_xlib_surface"
     #define NEKO_VK_WIN32_SURFACE_EXT_NAME  "VK_KHR_win32_surface"
-    #define NEKO_VK_DEBUG_UTILS_EXT_NAME    "VK_debug_utils"
+    #define NEKO_VK_DEBUG_UTILS_EXT_NAME    "VK_EXT_debug_utils"
 #endif
 
 

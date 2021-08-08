@@ -4,6 +4,7 @@
 --- author: Karl-Mihkel Ott
 
 workspace "nwin"
+    cleancommands { "make clean %{cfg.buildcfg}" }
     configurations { "Debug", "Release" }
     platforms { "Win32", "Linux" }
     includedirs { "include" }

@@ -28,6 +28,7 @@ void neko_InitAPI() {
     Bool supported;
     neko_assert(XkbSetDetectableAutoRepeat(_neko_API.display, True, &supported), 
                 "DetectableAutoRepeat is not supported");
+    _neko_API.is_init = true;
 }
 
 
@@ -46,6 +47,7 @@ neko_Window neko_NewWindow (
     neko_Hint hints,
     const char *title
 ) {
+    neko_assert(_neko_API.is_init, "Please initialise neko library with neko_InitAPI() before creating new windows");
     neko_assert(wslot_reserved + 1 >= _MAX_WSLOT_C, "There are no free window slots available");
     neko_Window win = (wslot_reserved++);
 
@@ -80,8 +82,8 @@ neko_Window neko_NewWindow (
         swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, wslots[win].x11.vi.visual, AllocNone);
         wslots[win].x11.window = XCreateWindow(_neko_API.display, _neko_API.root, 
                                        0, 0, wslots[win].swidth, wslots[win].sheight,
-                                       0, InputOutput, 
-                                       wslots[win].x11.vi.depth, wslots[win].x11.vi.visual, 
+                                       0, wslots[win].x11.vi.depth, 
+                                       InputOutput, wslots[win].x11.vi.visual, 
                                        VALUE_MASK, 
                                        &swa);
     }
@@ -167,9 +169,6 @@ void neko_UpdateSizeMode(neko_Window win, neko_Hint hints) {
 
 /// Destroy window instance and free all resources that were used
 void neko_DestroyWindow(neko_Window win) {
-    if(!(wslots[win].hints & NEKO_HINT_API_OPENGL))
-        XFreeGC(_neko_API.display, wslots[win].x11.gc);
-
     XDestroyWindow(_neko_API.display, wslots[win].x11.window);
 }
 
@@ -292,22 +291,6 @@ void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s, bool is
 }
 
 
-void _neko_GetVisualInfo(neko_Window win) {
-    if(wslots[win].hints & NEKO_HINT_API_OPENGL) {
-        GLint attrs[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-        XVisualInfo *vi = glXChooseVisual(_neko_API.display, 0, attrs);
-
-        neko_assert(vi, "Failed to choose GLX visual");
-        wslots[win].x11.p_vi = vi;
-    }
-
-    else {
-        wslots[win].x11.vi.visual = DefaultVisual(_neko_API.display, _neko_API.scr);
-        wslots[win].x11.vi.depth = DefaultDepth(_neko_API.display, _neko_API.scr);
-    }
-}
-
-
 /*****************************/
 /****** Inner functions ******/
 /*****************************/
@@ -360,6 +343,31 @@ static void _neko_HandleResize(neko_Window win) {
     wslots[win].cwidth = _neko_API.fr_ev.xconfigure.width;
     wslots[win].cheight = _neko_API.fr_ev.xconfigure.height;
 }
+
+
+static void _neko_GetVisualInfo(neko_Window win) {
+    if(wslots[win].hints & NEKO_HINT_API_OPENGL) {
+        GLint attrs[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+        XVisualInfo *vi = glXChooseVisual(_neko_API.display, 0, attrs);
+
+        neko_assert(vi, "Failed to choose GLX visual");
+        wslots[win].x11.p_vi = vi;
+    }
+
+    else {
+        printf("display: 0x%p\n", _neko_API.display);
+        printf("screen: %d\n", _neko_API.scr);
+        memset(&wslots[win].x11.vi, 0, sizeof(Visual));
+        wslots[win].x11.vi.screen = _neko_API.scr;
+        wslots[win].x11.vi.visual = DefaultVisual(_neko_API.display, _neko_API.scr);
+        wslots[win].x11.vi.depth = DefaultDepth(_neko_API.display, _neko_API.scr);
+        wslots[win].x11.vi.bits_per_rgb = 32;
+
+        printf("depth: 0x%02x\n", wslots[win].x11.vi.depth);
+    }
+}
+
+
 
 
 static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data) {

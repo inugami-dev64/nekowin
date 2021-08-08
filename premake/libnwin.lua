@@ -17,7 +17,7 @@ function libnwin.build()
 
         files {
             "include/*.h",
-            "src/*.c",
+            "src/*.c"
         }
 
         removefiles{ "src/vk.c", "include/vk.h" }
