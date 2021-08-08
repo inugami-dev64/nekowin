@@ -18,14 +18,13 @@
     #include <window.h>
 
 
+    extern int64_t __min_vc_x;
+    extern int64_t __max_vc_x;
+    extern int64_t __min_vc_y;
+    extern int64_t __max_vc_y;
 
-    extern uint64_t __min_vc_x;
-    extern uint64_t __max_vc_x;
-    extern uint64_t __min_vc_y;
-    extern uint64_t __max_vc_y;
-
-    extern uint64_t __prev_x;
-    extern uint64_t __prev_y;
+    extern int64_t __prev_x;
+    extern int64_t __prev_y;
 
     extern neko_VCPOverflowAction __x_overflow_act;
     extern neko_VCPOverflowAction __y_overflow_act;
@@ -68,7 +67,7 @@ void neko_GetPixelSize(neko_Window win, float *x, float *y);
 
 
 /// Get the current mouse position on the window
-void neko_GetMousePos(neko_Window win, uint64_t *x, uint64_t *y);
+void neko_GetMousePos(neko_Window win, int64_t *x, int64_t *y);
 
 
 /// Find delta mouse movement between current and previous frames
@@ -77,7 +76,7 @@ void neko_FindDeltaMovement(neko_Window win, uint64_t *x, uint64_t *y);
 
 /// Limit the largest and smallest virtual cursor position that can be achieved using 
 /// virtual cursor positioning (VCP)
-void neko_LimitVirtualPos(uint64_t max_x, uint64_t min_x, uint64_t max_y, uint64_t min_y);
+void neko_LimitVirtualPos(int64_t max_x, int64_t min_x, int64_t max_y, int64_t min_y);
 
 
 /// Set virtual mouse position overflow actions that specify what

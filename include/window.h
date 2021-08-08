@@ -33,10 +33,10 @@ typedef struct neko_VCData {
     #endif
     // X and Y virtual position are in 64bit floating point integer since 
     // Arithmetic operation with these types are needed in camera classes
-    uint64_t x;
-    uint64_t y;
-    uint64_t orig_x;
-    uint64_t orig_y;
+    int64_t x;
+    int64_t y;
+    int64_t orig_x;
+    int64_t orig_y;
 } neko_VCData;
 
 
@@ -49,8 +49,8 @@ typedef struct _neko_Window {
     int32_t swidth;
     int32_t sheight;
     const char * window_title;
-    uint64_t mx;
-    uint64_t my;
+    int64_t mx;
+    int64_t my;
     neko_Hint hints;
     neko_VCData vc_data;
     neko_CursorMode cursor_mode;

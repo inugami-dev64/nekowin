@@ -45,7 +45,7 @@ void neko_GetPixelSize(neko_Window win, float *x, float *y) {
 }
 
 
-void neko_GetMousePos(neko_Window win, uint64_t *x, uint64_t *y) {
+void neko_GetMousePos(neko_Window win, int64_t *x, int64_t *y) {
     if(wslots[win].vc_data.is_enabled) {
         *x = wslots[win].vc_data.x;
         *y = wslots[win].vc_data.y;
@@ -70,10 +70,10 @@ void neko_FindDeltaMovement(neko_Window win, uint64_t *x, uint64_t *y) {
 /// Limit the largest and smallest virtual cursor position that can be achieved using 
 /// virtual mouse positioning
 void neko_LimitVirtualPos (
-    uint64_t max_x,       
-    uint64_t min_x,
-    uint64_t max_y,
-    uint64_t min_y
+    int64_t max_x,       
+    int64_t min_x,
+    int64_t max_y,
+    int64_t min_y
 ) {
     __max_vc_x = max_x;
     __min_vc_x = min_x;

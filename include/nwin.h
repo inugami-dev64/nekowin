@@ -45,13 +45,13 @@ extern "C" {
 
     // Global static varible declarations
     // Specify maximum and minimum virtual cursor positions
-    uint64_t __min_vc_x = INT64_MIN;
-    uint64_t __max_vc_x = INT64_MAX;
-    uint64_t __min_vc_y = INT64_MIN;
-    uint64_t __max_vc_y = INT64_MAX;
+    int64_t __min_vc_x = INT64_MIN;
+    int64_t __max_vc_x = INT64_MAX;
+    int64_t __min_vc_y = INT64_MIN;
+    int64_t __max_vc_y = INT64_MAX;
 
-    uint64_t __prev_x = 0;
-    uint64_t __prev_y = 0;
+    int64_t __prev_x = 0;
+    int64_t __prev_y = 0;
 
     // VCP overflow action specifiers
     neko_VCPOverflowAction __x_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
@@ -133,7 +133,7 @@ void neko_SetMouseCoords(neko_Window win, uint64_t x, uint64_t y);
 
 
 /// Synchronise mouse position in neko_Window
-void neko_UpdateMousePos(neko_Window win, bool init_vc);
+void neko_UpdateMousePos(neko_Window win);
 
 
 /// Acquire all required Vulkan extension strings

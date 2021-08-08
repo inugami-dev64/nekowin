@@ -53,11 +53,11 @@ neko_Window neko_NewWindow (
 
     // Fill the window structure
     wslots[win].swidth = wslots[win].cwidth = width;
-    wslots[win].sheight = wslots[win].cwidth = height;
+    wslots[win].sheight = wslots[win].cheight = height;
     wslots[win].window_title = title;
 
-    wslots[win].vc_data.is_enabled = 0;
     wslots[win].hints = hints;
+    wslots[win].vc_data.is_enabled = false;
     wslots[win].vc_data.orig_x = (float) width / 2.0f;
     wslots[win].vc_data.orig_y = (float) height / 2.0f;
     wslots[win].vc_data.x = 0;
@@ -73,7 +73,7 @@ neko_Window neko_NewWindow (
     if(wslots[win].x11.p_vi) {
         swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, wslots[win].x11.p_vi->visual, AllocNone);
         wslots[win].x11.window = XCreateWindow(_neko_API.display, _neko_API.root, 
-                                       0, 0, wslots[win].swidth, wslots[win].sheight,
+                                       0, 0, wslots[win].cwidth, wslots[win].cheight,
                                        0, wslots[win].x11.p_vi->depth, 
                                        InputOutput, wslots[win].x11.p_vi->visual, 
                                        VALUE_MASK, 
@@ -81,7 +81,7 @@ neko_Window neko_NewWindow (
     } else {
         swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, wslots[win].x11.vi.visual, AllocNone);
         wslots[win].x11.window = XCreateWindow(_neko_API.display, _neko_API.root, 
-                                       0, 0, wslots[win].swidth, wslots[win].sheight,
+                                       0, 0, wslots[win].cwidth, wslots[win].cheight,
                                        0, wslots[win].x11.vi.depth, 
                                        InputOutput, wslots[win].x11.vi.visual, 
                                        VALUE_MASK, 
@@ -149,6 +149,8 @@ void neko_UpdateWindow(neko_Window win) {
     XGetWindowAttributes(_neko_API.display, wslots[win].x11.window, &attribs);
     wslots[win].cwidth = attribs.width;
     wslots[win].cheight = attribs.height;
+    neko_UpdateMousePos(win);
+
 
     // Check if the window is used as in OpenGL context
     if(wslots[win].hints & NEKO_HINT_API_OPENGL)
@@ -218,10 +220,7 @@ void neko_SetMouseCoords (
 }
 
 
-void neko_UpdateMousePos (
-    neko_Window win, 
-    bool init_vc
-) {
+void neko_UpdateMousePos(neko_Window win) {
     // dummy variables for x11
     Window return_window;
     int win_x, win_y, x, y;
@@ -229,20 +228,20 @@ void neko_UpdateMousePos (
     XQueryPointer(_neko_API.display, wslots[win].x11.window, &return_window, &return_window, 
         &win_x, &win_y, &x, &y, &mask);
 
-    if(wslots[win].vc_data.is_enabled && !init_vc) {
-        double movement_x = (double) ((uint64_t) x - wslots[win].vc_data.orig_x);
-        double movement_y = (double) ((uint64_t) y - wslots[win].vc_data.orig_y);
+    if(wslots[win].vc_data.is_enabled) {
+        int64_t movement_x = (int64_t) x - wslots[win].vc_data.orig_x;
+        int64_t movement_y = (int64_t) y - wslots[win].vc_data.orig_y;
 
         if(x != wslots[win].vc_data.orig_x || y != wslots[win].vc_data.orig_y)
             neko_SetMouseCoords(win, wslots[win].vc_data.orig_x, wslots[win].vc_data.orig_y);
 
         // Check for overflow on x position
-        if(wslots[win].vc_data.x + movement_x >= (double) __max_vc_x) {
+        if(wslots[win].vc_data.x + movement_x >= __max_vc_x) {
             if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
                 wslots[win].vc_data.x = __min_vc_x;
         }
         
-        else if(wslots[win].vc_data.x + movement_x <= (double) __min_vc_x) {
+        else if(wslots[win].vc_data.x + movement_x <= __min_vc_x) {
             if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
                 wslots[win].vc_data.x = __max_vc_x;
         }
@@ -251,12 +250,12 @@ void neko_UpdateMousePos (
 
 
         // Check for overflow on y position
-        if(wslots[win].vc_data.y + movement_y >= (double) __max_vc_y) {
+        if(wslots[win].vc_data.y + movement_y >= __max_vc_y) {
             if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
                 wslots[win].vc_data.y = __min_vc_y;
         }
         
-        else if(wslots[win].vc_data.y + movement_y <= (double) __min_vc_y) {
+        else if(wslots[win].vc_data.y + movement_y <= __min_vc_y) {
             if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
                 wslots[win].vc_data.y = __max_vc_y;
         }
@@ -265,8 +264,8 @@ void neko_UpdateMousePos (
     }
 
     else {
-        wslots[win].mx = (uint64_t) x;
-        wslots[win].my = (uint64_t) y;
+        wslots[win].mx = (int64_t) x;
+        wslots[win].my = (int64_t) y;
     }
 }
 
@@ -355,15 +354,11 @@ static void _neko_GetVisualInfo(neko_Window win) {
     }
 
     else {
-        printf("display: 0x%p\n", _neko_API.display);
-        printf("screen: %d\n", _neko_API.scr);
         memset(&wslots[win].x11.vi, 0, sizeof(Visual));
         wslots[win].x11.vi.screen = _neko_API.scr;
         wslots[win].x11.vi.visual = DefaultVisual(_neko_API.display, _neko_API.scr);
         wslots[win].x11.vi.depth = DefaultDepth(_neko_API.display, _neko_API.scr);
         wslots[win].x11.vi.bits_per_rgb = 32;
-
-        printf("depth: 0x%02x\n", wslots[win].x11.vi.depth);
     }
 }
 

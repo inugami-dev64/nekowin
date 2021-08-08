@@ -272,10 +272,7 @@ void neko_SetMouseCoords (
 }
 
 
-void neko_UpdateMousePos (
-    neko_Window win, 
-    bool init_vc
-) {
+void neko_UpdateMousePos(neko_Window win) {
     POINT point;
     
     // Check if GetCursorPos and ScreenToClient calls are successful and update original positions
@@ -290,18 +287,13 @@ void neko_UpdateMousePos (
     }
     
     // Check if virtual mouse positioning is enabled
-    if(wslots[win].vc_data.is_enabled && !init_vc) {
-        uint64_t movement_x = (point.x - wslots[win].vc_data.orig_x);
-        uint64_t movement_y = (point.y - wslots[win].vc_data.orig_y);
+    if(wslots[win].vc_data.is_enabled) {
+        int64_t movement_x = ((int64_t) point.x - wslots[win].vc_data.orig_x);
+        int64_t movement_y = ((int64_t) point.y - wslots[win].vc_data.orig_y);
 
         // Check if cursor should be set to the origin position
-        if(point.x  != (LONG) wslots[win].vc_data.orig_x || point.y  != (LONG) wslots[win].vc_data.orig_y) {
-            neko_SetMouseCoords (
-                win, 
-                wslots[win].vc_data.orig_x, 
-                wslots[win].vc_data.orig_y
-            );
-        }
+        if(point.x != (LONG) wslots[win].vc_data.orig_x || point.y != (LONG) wslots[win].vc_data.orig_y)
+            neko_SetMouseCoords(win, wslots[win].vc_data.orig_x, wslots[win].vc_data.orig_y);
 
         // Check if overflow is detected on x position
         if (wslots[win].vc_data.x + movement_x >= __max_vc_x) {
