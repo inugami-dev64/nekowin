@@ -57,14 +57,13 @@ neko_Window neko_NewWindow (
     wslots[win].vc_data.orig_y = height / 2;
 
     DWORD window_style;
-    WNDCLASSEX class = { 0 };
-    class.cbSize = sizeof(class);
+    WNDCLASS class = { 0 };
     class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     class.lpfnWndProc = _neko_Win32MessageHandler;
     class.hInstance = wslots[win].win32.instance = GetModuleHandleW(NULL);
     class.lpszClassName = __NEKO_CLASS_NAME;
 
-    _neko_ZeroValueErrorHandler((ULONG) RegisterClassEx(&class), 
+    _neko_ZeroValueErrorHandler((ULONG) RegisterClass(&class), 
                                 (ULONG) __LINE__, 
                                 "Failed to register neko window class");
 
@@ -73,8 +72,7 @@ neko_Window neko_NewWindow (
     _neko_HandleSizeHints(win, &window_style);
 
     LPWSTR w_title = _neko_CreateWideStringFromUTF8(wslots[win].window_title);
-    LPWSTR w_cname = _neko_CreateWideStringFromUTF8(__NEKO_CLASS_NAME);
-    wslots[win].win32.handle = CreateWindowExW(0, w_cname, w_title, 
+    wslots[win].win32.handle = CreateWindowExW(0, __NEKO_CLASS_NAME, w_title, 
                                        window_style, 
                                        0, 
                                        0, 
@@ -84,7 +82,6 @@ neko_Window neko_NewWindow (
                                     
     // Free all memory allocated for the wide title
     free(w_title);
-    free(w_cname);
     _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.handle), (ULONG) __LINE__, "Failed to initialise win32 window");
 
     wslots[win].win32.rids[0].usUsagePage = 0x01;
@@ -323,15 +320,9 @@ void neko_UpdateMousePos(neko_Window win) {
     }
 
     // Check if virtual mouse position initialisation is neccesary
-    else if(init_vc) {
+    else {
         wslots[win].mx = wslots[win].vc_data.orig_x;
         wslots[win].my = wslots[win].vc_data.orig_y;
-
-        neko_SetMouseCoords (
-            win, 
-            wslots[win].mx, 
-            wslots[win].my
-        );
     }
 }
 
@@ -352,7 +343,7 @@ void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s, bool is
 
     else *ext_s = 2;
     strcpy((*p_exts)[0], NEKO_VK_WSI_EXT_NAME);
-    strcpy((*p_exts)[1], NEKO_VK_XLIB_SURFACE_EXT_NAME);
+    strcpy((*p_exts)[1], NEKO_VK_WIN32_SURFACE_EXT_NAME);
 }
 
 
