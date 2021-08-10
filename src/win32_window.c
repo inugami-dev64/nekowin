@@ -57,13 +57,13 @@ neko_Window neko_NewWindow (
     wslots[win].vc_data.orig_y = height / 2;
 
     DWORD window_style;
-    WNDCLASS class = { 0 };
+    WNDCLASSW class = { 0 };
     class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     class.lpfnWndProc = _neko_Win32MessageHandler;
     class.hInstance = wslots[win].win32.instance = GetModuleHandleW(NULL);
     class.lpszClassName = __NEKO_CLASS_NAME;
 
-    _neko_ZeroValueErrorHandler((ULONG) RegisterClass(&class), 
+    _neko_ZeroValueErrorHandler((ULONG) RegisterClassW(&class), 
                                 (ULONG) __LINE__, 
                                 "Failed to register neko window class");
 
@@ -178,7 +178,7 @@ void neko_UpdateWindow(neko_Window win) {
     }
 
     if (!__is_running) return;
-    while(PeekMessageW(&wslots[win].win32.message, NULL, 0, 0, PM_REMOVE)) {
+    while(PeekMessageW(&wslots[win].win32.message, wslots[win].win32.handle, 0, 0, PM_REMOVE)) {
         TranslateMessage(&wslots[win].win32.message);
         DispatchMessage(&wslots[win].win32.message);
     }

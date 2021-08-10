@@ -127,6 +127,7 @@ void create_buffer_handles() {
     
     std::cout << "Vertices size: " << sizeof(vertices) << std::endl;
     glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
 
     // Enable vertex attribute arrays
     glEnableVertexAttribArray(0);
@@ -134,8 +135,6 @@ void create_buffer_handles() {
 
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*) 0 + 4 * sizeof(GLfloat));
-
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
 }
 
 
