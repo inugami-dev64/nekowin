@@ -43,6 +43,7 @@ typedef struct _neko_X11Atoms {
 typedef struct _neko_SurfaceX11 {
     Window window;
     GC gc;
+    GLXContext glc;
     XVisualInfo *p_vi;
     XVisualInfo vi;
 } neko_SurfaceX11;

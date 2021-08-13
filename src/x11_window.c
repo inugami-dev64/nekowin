@@ -34,10 +34,19 @@ void neko_InitAPI() {
 
 void neko_DeinitAPI() {
     XFreeCursor(_neko_API.display, _neko_API.cursors.standard);
-    XFreeCursor(_neko_API.display, _neko_API.cursors.hidden);
     XFreeCursor(_neko_API.display, _neko_API.cursors.pointer);
+    XFreeCursor(_neko_API.display, _neko_API.cursors.hidden);
     XFreeCursor(_neko_API.display, _neko_API.cursors.waiting);
-    XCloseDisplay(_neko_API.display);
+
+    _neko_API.cursors.standard = 0UL;
+    _neko_API.cursors.pointer = 0UL;
+    _neko_API.cursors.hidden = 0UL;
+    _neko_API.cursors.waiting = 0UL;
+
+    if(_neko_API.display) {
+        XCloseDisplay(_neko_API.display);
+        _neko_API.display = NULL;
+    }
 }
 
 
@@ -171,6 +180,7 @@ void neko_UpdateSizeMode(neko_Window win, neko_Hint hints) {
 
 /// Destroy window instance and free all resources that were used
 void neko_DestroyWindow(neko_Window win) {
+    glXDestroyContext(_neko_API.display, wslots[win].x11.glc);
     XDestroyWindow(_neko_API.display, wslots[win].x11.window);
 }
 
@@ -419,8 +429,8 @@ static void _neko_UpdateWindowSize(neko_Window win) {
 
 
 static void _neko_CreateGLContext(neko_Window win) {
-    GLXContext glc = glXCreateContext(_neko_API.display, wslots[win].x11.p_vi, NULL, GL_TRUE);
-    glXMakeCurrent(_neko_API.display, wslots[win].x11.window, glc);
+    wslots[win].x11.glc = glXCreateContext(_neko_API.display, wslots[win].x11.p_vi, NULL, GL_TRUE);
+    glXMakeCurrent(_neko_API.display, wslots[win].x11.window, wslots[win].x11.glc);
 }
 
 
@@ -437,4 +447,5 @@ static void _neko_LoadCursors(neko_Window win) {
     XColor color;
     pix = XCreateBitmapFromData(_neko_API.display, _neko_API.root, &data, 1, 1);
     _neko_API.cursors.hidden = XCreatePixmapCursor(_neko_API.display, pix, pix, &color, &color, 0, 0);
+    XFreePixmap(_neko_API.display, pix);
 }
