@@ -9,16 +9,18 @@ workspace "nwin"
     platforms { "Win32", "Linux" }
     includedirs { "include" }
     architecture "x86_64"
-    targetdir "build"
     pic "On"
 
     -- Debug and 
     filter "configurations:Debug"
         symbols "On"
         optimize "Debug"
+        targetdir "build/debug"
+
     filter "configurations:Release"
         symbols "Off"
         optimize "Speed"
+        targetdir "build/release"
 
     -- Include Vulkan headers from the SDK path if using Windows
     filter "platforms:Win32" 

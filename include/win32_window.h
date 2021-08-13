@@ -94,7 +94,7 @@ typedef struct _neko_SurfaceWIN32 {
     } _neko_API = { 0 };
 #endif
 
-#define __NEKO_CLASS_NAME           "NWIN"
+#define __NEKO_CLASS_NAME           L"NWIN"
 #define __NEKO_WGL_PF_ATTRIB_C      40
 
 
