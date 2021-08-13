@@ -180,7 +180,7 @@ void run(neko_Window win) {
     neko_Hint hints;
     int32_t x, y;
 
-    while(neko_IsRunning()) {
+    while(neko_IsRunning(win)) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         err_check("glClearColor");
         glClear(GL_COLOR_BUFFER_BIT);

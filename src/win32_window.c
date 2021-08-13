@@ -31,10 +31,16 @@ void neko_InitAPI() {
 }
 
 
+bool neko_APIInitStatus() {
+    return _neko_API.is_init;
+}
+
+
 void neko_DeinitAPI() {
     DestroyCursor(_neko_API.cursors.standard);
     DestroyCursor(_neko_API.cursors.pointer);
     DestroyCursor(_neko_API.cursors.waiting);
+    _neko_API.is_init = false;
 }
 
 

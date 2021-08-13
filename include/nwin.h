@@ -64,6 +64,8 @@ extern "C" {
     #define NEKO_VK_XLIB_SURFACE_EXT_NAME   "VK_KHR_xlib_surface"
     #define NEKO_VK_WIN32_SURFACE_EXT_NAME  "VK_KHR_win32_surface"
     #define NEKO_VK_DEBUG_UTILS_EXT_NAME    "VK_EXT_debug_utils"
+
+    bool __api_init = false;
 #endif
 
 
@@ -89,6 +91,10 @@ typedef uint32_t neko_Window;
 
 /// Initialise platform dependent backend api for nekowin library
 void neko_InitAPI();
+
+
+/// Get the initialisation status of the API
+bool neko_APIInitStatus();
 
 
 /// Deinitialise platform dependent backend api for nekowin library
@@ -117,7 +123,7 @@ void neko_DestroyWindow(neko_Window win);
 
 
 /// Check if window is still running and no close events have happened
-bool neko_IsRunning();
+bool neko_IsRunning(neko_Window win);
 
 
 /****************************************/

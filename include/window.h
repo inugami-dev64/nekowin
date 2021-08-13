@@ -51,6 +51,7 @@ typedef struct _neko_Window {
     const char * window_title;
     int64_t mx;
     int64_t my;
+    bool is_running;
     neko_Hint hints;
     neko_VCData vc_data;
     neko_CursorMode cursor_mode;

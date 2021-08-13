@@ -28,8 +28,15 @@ void neko_InitAPI() {
     Bool supported;
     neko_assert(XkbSetDetectableAutoRepeat(_neko_API.display, True, &supported), 
                 "DetectableAutoRepeat is not supported");
+
     _neko_API.is_init = true;
 }
+
+
+bool neko_APIInitStatus() {
+    return _neko_API.is_init;
+};
+
 
 
 void neko_DeinitAPI() {
@@ -43,10 +50,9 @@ void neko_DeinitAPI() {
     _neko_API.cursors.hidden = 0UL;
     _neko_API.cursors.waiting = 0UL;
 
-    if(_neko_API.display) {
-        XCloseDisplay(_neko_API.display);
-        _neko_API.display = NULL;
-    }
+    // This causes a memory leak but calling XCloseDisplay causes segmentation fault instead :/
+    _neko_API.display = NULL;
+    _neko_API.is_init = false;
 }
 
 
@@ -110,7 +116,7 @@ neko_Window neko_NewWindow (
     if(hints & NEKO_HINT_API_OPENGL)
         _neko_CreateGLContext(win);
 
-    __is_running = true;
+    wslots[win].is_running = true;
     return win;
 }
 
@@ -140,7 +146,7 @@ void neko_UpdateWindow(neko_Window win) {
     // Check for exit event
     if(XCheckTypedWindowEvent(_neko_API.display, wslots[win].x11.window, 
        ClientMessage, &_neko_API.fr_ev)) {
-        __is_running = false;
+        wslots[win].is_running = false;
         return;
     }
 
@@ -180,14 +186,15 @@ void neko_UpdateSizeMode(neko_Window win, neko_Hint hints) {
 
 /// Destroy window instance and free all resources that were used
 void neko_DestroyWindow(neko_Window win) {
-    glXDestroyContext(_neko_API.display, wslots[win].x11.glc);
+    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
+        glXDestroyContext(_neko_API.display, wslots[win].x11.glc);
     XDestroyWindow(_neko_API.display, wslots[win].x11.window);
 }
 
 
 /// Check if window is still running and no close events have happened
-bool neko_IsRunning() {
-    return __is_running;
+bool neko_IsRunning(neko_Window win) {
+    return wslots[win].is_running;
 }
 
 
@@ -371,8 +378,6 @@ static void _neko_GetVisualInfo(neko_Window win) {
         wslots[win].x11.vi.bits_per_rgb = 32;
     }
 }
-
-
 
 
 static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data) {
