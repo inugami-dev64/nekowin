@@ -51,7 +51,7 @@ neko_Window neko_NewWindow (
     neko_Hint hints,
     const char *title
 ) {
-    neko_assert(wslot_reserved + 1 >= _MAX_WSLOT_C, "There are no free window slots available");
+    neko_assert(wslot_reserved + 1 >= __MAX_WSLOT_C, "There are no free window slots available");
     neko_Window win = (wslot_reserved++);
 
     wslots[win].cwidth = wslots[win].swidth = width;
@@ -79,12 +79,14 @@ neko_Window neko_NewWindow (
 
     LPWSTR w_title = _neko_CreateWideStringFromUTF8(wslots[win].window_title);
     wslots[win].win32.handle = CreateWindowExW(0, __NEKO_CLASS_NAME, w_title, 
-                                       window_style, 
-                                       0, 
-                                       0, 
-                                       wslots[win].cwidth, wslots[win].cheight, 
-                                       NULL, NULL, 
-                                       wslots[win].win32.instance, NULL);
+											   window_style, 
+											   0, 
+											   0, 
+											   wslots[win].cwidth, wslots[win].cheight, 
+										       NULL, NULL, 
+											   wslots[win].win32.instance, NULL);
+
+    __handles[win] = wslots[win].win32.handle;
                                     
     // Free all memory allocated for the wide title
     free(w_title);
@@ -113,7 +115,7 @@ neko_Window neko_NewWindow (
     wslots[win].vc_data.orig_x = (int64_t)(wslots[win].cwidth / 2);
     wslots[win].vc_data.orig_y = (int64_t)(wslots[win].cheight / 2);
 
-	__is_running = true;
+    wslots[win].is_running = true;
     return win;
 }
 
@@ -183,7 +185,7 @@ void neko_UpdateWindow(neko_Window win) {
         SwapBuffers(dc);
     }
 
-    if (!__is_running) return;
+    if (!wslots[win].is_running) return;
     while(PeekMessageW(&wslots[win].win32.message, wslots[win].win32.handle, 0, 0, PM_REMOVE)) {
         TranslateMessage(&wslots[win].win32.message);
         DispatchMessage(&wslots[win].win32.message);
@@ -217,8 +219,8 @@ void neko_DestroyWindow(neko_Window win) {
 
 
 /// Check if window is still running and no close events have happened
-bool neko_IsRunning() {
-    return __is_running;
+bool neko_IsRunning(neko_Window win) {
+    return wslots[win].is_running;
 }
 
 
@@ -367,11 +369,14 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
 ) {
     neko_Key key;
     neko_MouseButton btn;
+    uint32_t wid;
 
     switch(msg) {  
         case WM_CLOSE:
         case WM_DESTROY:
-            __is_running = false;
+            wid = _neko_FindWindowIndexFromHandle(handle);
+            if (wid != UINT32_MAX)
+                wslots[wid].is_running = false;
             return 0;
 
         case WM_SYSKEYDOWN: 
@@ -631,4 +636,16 @@ static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_m
         fprintf(stderr, "%s:%u; %s\n", __FILE__, __LINE__, err_msg);
         exit(-1);
     }
+}
+
+
+static uint32_t _neko_FindWindowIndexFromHandle(HWND handle) {
+    if (handle) {
+        for (uint32_t i = 0; i < __MAX_WSLOT_C; i++) {
+            if (__handles[i] == handle)
+                return i;
+        }
+    }
+
+    return UINT32_MAX;
 }

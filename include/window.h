@@ -8,15 +8,14 @@
 #ifndef __WINDOW_H
 #define __WINDOW_H
 
+// This macro can be redefined if for some reason more windows are needed
+#define __MAX_WSLOT_C    16
 
 #if defined(__linux__)
     #include <x11_window.h>
 #elif defined(_WIN32)
     #include <win32_window.h>
 #endif
-
-// This macro can be redefined if for some reason more windows are needed
-#define _MAX_WSLOT_C    16
 
 
 /*
@@ -51,7 +50,7 @@ typedef struct _neko_Window {
     const char * window_title;
     int64_t mx;
     int64_t my;
-    bool is_running;
+    volatile sig_atomic_t is_running;
     neko_Hint hints;
     neko_VCData vc_data;
     neko_CursorMode cursor_mode;

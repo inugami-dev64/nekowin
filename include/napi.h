@@ -11,6 +11,7 @@
 #ifdef __NAPI_C
     #include <stdint.h>
     #include <stdbool.h>
+	#include <signal.h>
     #include <vulkan/vulkan.h>
     typedef uint32_t neko_Window;
 
@@ -29,7 +30,7 @@
     extern neko_VCPOverflowAction __x_overflow_act;
     extern neko_VCPOverflowAction __y_overflow_act;
 
-    extern _neko_Window wslots[_MAX_WSLOT_C];
+    extern _neko_Window wslots[__MAX_WSLOT_C];
     extern uint32_t wslot_reserved;
 #endif
 

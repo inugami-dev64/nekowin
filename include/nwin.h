@@ -57,8 +57,6 @@ extern "C" {
     neko_VCPOverflowAction __x_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
     neko_VCPOverflowAction __y_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
 
-    volatile sig_atomic_t __is_running;
-
     // Vulkan extension name macros
     #define NEKO_VK_WSI_EXT_NAME            "VK_KHR_surface"
     #define NEKO_VK_XLIB_SURFACE_EXT_NAME   "VK_KHR_xlib_surface"
@@ -80,7 +78,7 @@ typedef uint32_t neko_Window;
 #ifdef __NWIN_C
     #include <window.h>   
 
-    _neko_Window wslots[_MAX_WSLOT_C] = { 0 };
+    _neko_Window wslots[__MAX_WSLOT_C] = { 0 };
     uint32_t wslot_reserved = 0;
 #endif
 

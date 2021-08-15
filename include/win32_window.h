@@ -43,6 +43,9 @@ typedef struct _neko_SurfaceWIN32 {
         HCURSOR hidden;
     } _neko_Cursors;
 
+
+    volatile sig_atomic_t __is_running;
+
     /// wgl function pointer type defintions
     typedef HGLRC (WINAPI *PFN_wglCreateContext)(HDC);
     typedef BOOL (WINAPI *PFN_wglDeleteContext)(HGLRC);
@@ -92,6 +95,8 @@ typedef struct _neko_SurfaceWIN32 {
         WGL wgl;
         _neko_Cursors cursors;
     } _neko_API = { 0 };
+
+	HWND __handles[__MAX_WSLOT_C] = { 0 };
 #endif
 
 #define __NEKO_CLASS_NAME           L"NWIN"
@@ -108,4 +113,5 @@ static void _neko_LoadWGLExtensions();
 static BOOL _neko_FindExtensionSupport(const char *ext);
 static WCHAR *_neko_CreateWideStringFromUTF8(const char *title);
 static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_msg);
+static uint32_t _neko_FindWindowIndexFromHandle(HWND handle);
 #endif
