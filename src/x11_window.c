@@ -63,7 +63,7 @@ neko_Window neko_NewWindow (
     const char *title
 ) {
     neko_assert(_neko_API.is_init, "Please initialise neko library with neko_InitAPI() before creating new windows");
-    neko_assert(wslot_reserved + 1 >= _MAX_WSLOT_C, "There are no free window slots available");
+    neko_assert(wslot_reserved + 1 >= __MAX_WSLOT_C, "There are no free window slots available");
     neko_Window win = (wslot_reserved++);
 
     // Fill the window structure
