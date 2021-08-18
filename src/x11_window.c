@@ -397,6 +397,9 @@ static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data) 
 
 
 static void _neko_UpdateWindowSize(neko_Window win) {
+    if (!(wslots[win].hints & NEKO_HINT_FIXED_SIZE) && !(wslots[win].hints & NEKO_HINT_RESIZEABLE) && !(wslots[win].hints & NEKO_HINT_FULL_SCREEN))
+        wslots[win].hints |= NEKO_HINT_FIXED_SIZE;
+
     if(wslots[win].hints & NEKO_HINT_FULL_SCREEN) {
         // Send _NET_WM_STATE_FULLSCREEN atom to the window manager and the window manager should make 
         // the window into fullscreen

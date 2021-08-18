@@ -10,11 +10,15 @@
 
 void neko_ChangeVCMode(bool is_vcp, neko_Window win) {
     wslots[win].vc_data.is_enabled = is_vcp;
+    if(wslots[win].vc_data.is_enabled)
+		neko_SetMouseCoords(win, wslots[win].vc_data.orig_x, wslots[win].vc_data.orig_y);
 }
 
 
 void neko_ToggleVCMode(neko_Window win) {
     wslots[win].vc_data.is_enabled = !wslots[win].vc_data.is_enabled;
+    if(wslots[win].vc_data.is_enabled)
+		neko_SetMouseCoords(win, wslots[win].vc_data.orig_x, wslots[win].vc_data.orig_y);
 }
 
 

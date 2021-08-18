@@ -188,7 +188,6 @@ void run(neko_Window win) {
         neko_GetWindowSize(win, &x, &y);
         glViewport(0, 0, x, y);
 
-
         err_check("glClear");
         glUseProgram(sh_program);
         err_check("glUseProgram");
@@ -198,6 +197,10 @@ void run(neko_Window win) {
         err_check("glDrawElements");
 
         neko_GetWindowHints(win, &hints);
+
+        int64_t x, y;
+        neko_GetMousePos(win, &x, &y);
+        printf("Mouse pos: %ld:%ld\n", x, y);
 
         if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;

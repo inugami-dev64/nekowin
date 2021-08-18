@@ -54,8 +54,8 @@ neko_Window neko_NewWindow (
     neko_assert(wslot_reserved + 1 >= __MAX_WSLOT_C, "There are no free window slots available");
     neko_Window win = (wslot_reserved++);
 
-    wslots[win].cwidth = wslots[win].swidth = width;
-    wslots[win].cheight = wslots[win].sheight = height;
+    wslots[win].swidth = width;
+    wslots[win].sheight = height;
     wslots[win].hints = hints;
     wslots[win].window_title = title;
     wslots[win].vc_data.is_enabled = false;
@@ -82,9 +82,17 @@ neko_Window neko_NewWindow (
 											   window_style, 
 											   0, 
 											   0, 
-											   wslots[win].cwidth, wslots[win].cheight, 
+											   wslots[win].swidth, wslots[win].sheight, 
 										       NULL, NULL, 
 											   wslots[win].win32.instance, NULL);
+
+    // NOTE: Whenever using WIN32 api, you must keep in mind that the created window size is absolute and contains all window decorations as well.
+    //       In order to find the actual client are we must call GetClientRect() function
+    RECT rect;
+    GetClientRect(wslots[win].win32.handle, &rect);
+    wslots[win].cwidth = rect.right;
+    wslots[win].cheight = rect.bottom;
+
 
     __handles[win] = wslots[win].win32.handle;
                                     
@@ -116,6 +124,7 @@ neko_Window neko_NewWindow (
     wslots[win].vc_data.orig_y = (int64_t)(wslots[win].cheight / 2);
 
     wslots[win].is_running = true;
+    ShowWindow(wslots[win].win32.handle, SW_NORMAL);
     return win;
 }
 
@@ -167,7 +176,6 @@ void neko_UpdateWindow(neko_Window win) {
         );
     }
     _neko_UnreleaseKeys();
-    ShowWindow(wslots[win].win32.handle, SW_NORMAL);
 
 
     // NOTE: I am not sure how much of a overhead GetWindowRect possesses, but for now I guess it is okay
@@ -190,6 +198,8 @@ void neko_UpdateWindow(neko_Window win) {
         TranslateMessage(&wslots[win].win32.message);
         DispatchMessage(&wslots[win].win32.message);
     }
+
+    neko_UpdateMousePos(win);
 }
 
 
@@ -270,26 +280,18 @@ void neko_SetMouseCoords (
     pnt.y = (LONG) y;
     ClientToScreen(wslots[win].win32.handle, &pnt);
     SetCursorPos((int) pnt.x, (int) pnt.y);
-    if(!wslots[win].vc_data.is_enabled) {
-        wslots[win].mx = (LONG) x;
-        wslots[win].my = (LONG) y;
-    }
 }
 
 
 void neko_UpdateMousePos(neko_Window win) {
-    POINT point;
     
-    // Check if GetCursorPos and ScreenToClient calls are successful and update original positions
-    if(GetCursorPos(&point) && ScreenToClient(wslots[win].win32.handle, &point)) {
-        wslots[win].mx = point.x;
-        wslots[win].my = point.y;
-    }
+    // Retrieve screen cursor position and convert it to client relative coordinates
+    POINT point;
+    _neko_ZeroValueErrorHandler((ULONG) GetCursorPos(&point), __LINE__, "Failed to retrieve absolute WIN32 cursor position");
+    _neko_ZeroValueErrorHandler((ULONG) ScreenToClient(wslots[win].win32.handle, &point), __LINE__, "Failed to convert screen cursor position to client relative coordinates");
 
-    else {
-        fprintf(stderr, "Failed to read WIN32 cursor\n");
-        exit(EXIT_FAILURE);
-    }
+    // point.y = -point.y;
+
     
     // Check if virtual mouse positioning is enabled
     if(wslots[win].vc_data.is_enabled) {
@@ -329,8 +331,8 @@ void neko_UpdateMousePos(neko_Window win) {
 
     // Check if virtual mouse position initialisation is neccesary
     else {
-        wslots[win].mx = wslots[win].vc_data.orig_x;
-        wslots[win].my = wslots[win].vc_data.orig_y;
+        wslots[win].mx = (int64_t) point.x;
+        wslots[win].my = (int64_t) point.y;
     }
 }
 
@@ -369,7 +371,7 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
 ) {
     neko_Key key;
     neko_MouseButton btn;
-    uint32_t wid;
+    neko_Window wid;
 
     switch(msg) {  
         case WM_CLOSE:
@@ -453,6 +455,10 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
 
 
 static void _neko_HandleSizeHints(neko_Window win, DWORD *ws) {
+    // Check if no window size hints were given and if so give fixed size hint
+    if (!(wslots[win].hints & NEKO_HINT_FIXED_SIZE) && !(wslots[win].hints & NEKO_HINT_RESIZEABLE) && !(wslots[win].hints & NEKO_HINT_FULL_SCREEN))
+        wslots[win].hints |= NEKO_HINT_FIXED_SIZE;
+
     if(wslots[win].hints & NEKO_HINT_FIXED_SIZE) {
         *ws = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
         wslots[win].cwidth = wslots[win].swidth;
