@@ -7,7 +7,8 @@
 #define __X11_SURFACE_H
 
 #define EVENT_MASK KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
-                    SubstructureNotifyMask | SubstructureRedirectMask
+                   StructureNotifyMask | ClientMessage
+                   
 
 #define VALUE_MASK CWBorderPixel | CWColormap | CWEventMask
 
@@ -40,13 +41,13 @@ typedef struct _neko_X11Atoms {
 } _neko_X11Atoms;
 
 
-typedef struct _neko_SurfaceX11 {
+typedef struct {
     Window window;
     GC gc;
     GLXContext glc;
     XVisualInfo *p_vi;
     XVisualInfo vi;
-} neko_SurfaceX11;
+} neko_NativeWindowX11;
 
 
 #ifdef __NWIN_C 
@@ -63,7 +64,6 @@ typedef struct _neko_SurfaceX11 {
     struct {
         bool is_init;
         Display *display;
-        XEvent fr_ev;
         _neko_X11Atoms atoms;
         Window root;
         int32_t scr;
@@ -73,9 +73,8 @@ typedef struct _neko_SurfaceX11 {
 
 
 /// Inner function declarations 
-static void _neko_HandleKeyEvents(); 
-static void _neko_HandleMouseEvents(); 
-static void _neko_HandleResize(neko_Window win);
+static void _neko_HandleKeyEvents(neko_Window win, int type, XKeyEvent *kev); 
+static void _neko_HandleMouseEvents(neko_Window win, int type, XButtonEvent *bev); 
 static void _neko_GetVisualInfo(neko_Window win);
 static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data);
 static void _neko_UpdateWindowSize(neko_Window win);

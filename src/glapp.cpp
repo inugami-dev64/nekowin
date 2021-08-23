@@ -181,6 +181,7 @@ void run(neko_Window win) {
     int32_t x, y;
 
     while(neko_IsRunning(win)) {
+        neko_UpdateWindow(win);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         err_check("glClearColor");
         glClear(GL_COLOR_BUFFER_BIT);
@@ -200,7 +201,6 @@ void run(neko_Window win) {
 
         int64_t x, y;
         neko_GetMousePos(win, &x, &y);
-        printf("Mouse pos: %ld:%ld\n", x, y);
 
         if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;
@@ -246,11 +246,6 @@ void run(neko_Window win) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             allow_toggle = true;
         }
-
-        neko_UpdateWindow(win);
-
-        // Check for any errors during the frame generation
-        err_check("glDrawElements");
     }
 
     std::cout << "Done" << std::endl;

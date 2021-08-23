@@ -32,7 +32,7 @@ typedef struct _neko_SurfaceWIN32 {
     RAWINPUT raw_input;
     UINT raw_input_size;
     HGLRC gl_context;
-} neko_SurfaceWIN32;
+} neko_NativeWindowWin32;
 
 
 #ifdef __NWIN_C

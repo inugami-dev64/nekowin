@@ -57,8 +57,8 @@ void neko_DeinitAPI() {
 
 
 neko_Window neko_NewWindow (
-    int32_t width, 
-    int32_t height, 
+    int32_t width,
+    int32_t height,
     neko_Hint hints,
     const char *title
 ) {
@@ -67,8 +67,8 @@ neko_Window neko_NewWindow (
     neko_Window win = (wslot_reserved++);
 
     // Fill the window structure
-    wslots[win].swidth = wslots[win].cwidth = width;
-    wslots[win].sheight = wslots[win].cheight = height;
+    wslots[win].owidth = width = wslots[win].cwidth = width;
+    wslots[win].oheight = wslots[win].cheight = height;
     wslots[win].window_title = title;
 
     wslots[win].hints = hints;
@@ -88,19 +88,19 @@ neko_Window neko_NewWindow (
     if(wslots[win].x11.p_vi) {
         swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, wslots[win].x11.p_vi->visual, AllocNone);
         wslots[win].x11.window = XCreateWindow(_neko_API.display, _neko_API.root, 
-                                       0, 0, wslots[win].cwidth, wslots[win].cheight,
-                                       0, wslots[win].x11.p_vi->depth, 
-                                       InputOutput, wslots[win].x11.p_vi->visual, 
-                                       VALUE_MASK, 
-                                       &swa);
+                                               0, 0, wslots[win].cwidth, wslots[win].cheight,
+                                               0, wslots[win].x11.p_vi->depth, 
+                                               InputOutput, wslots[win].x11.p_vi->visual, 
+                                               VALUE_MASK, 
+                                               &swa);
     } else {
         swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, wslots[win].x11.vi.visual, AllocNone);
         wslots[win].x11.window = XCreateWindow(_neko_API.display, _neko_API.root, 
-                                       0, 0, wslots[win].cwidth, wslots[win].cheight,
-                                       0, wslots[win].x11.vi.depth, 
-                                       InputOutput, wslots[win].x11.vi.visual, 
-                                       VALUE_MASK, 
-                                       &swa);
+                                               0, 0, wslots[win].cwidth, wslots[win].cheight,
+                                               0, wslots[win].x11.vi.depth, 
+                                               InputOutput, wslots[win].x11.vi.visual, 
+                                               VALUE_MASK, 
+                                               &swa);
     }
 
     // Check if the window was created successfully
@@ -143,29 +143,54 @@ VkResult neko_InitVKSurface (
 /// Update window events and key arrays
 /// This function is meant to be called in every frame
 void neko_UpdateWindow(neko_Window win) {
-    // Check for exit event
-    if(XCheckTypedWindowEvent(_neko_API.display, wslots[win].x11.window, 
-       ClientMessage, &_neko_API.fr_ev)) {
-        wslots[win].is_running = false;
-        return;
-    }
-
+    // Set notfiy booleans to false for updating resize update information
+    wslots[win].resize_notify = false;
     _neko_UnreleaseKeys();
-    
-    if(XCheckWindowEvent(_neko_API.display, wslots[win].x11.window, 
-       KeyPressMask | KeyReleaseMask, &_neko_API.fr_ev)) 
-        _neko_HandleKeyEvents(win);
-    
-    if(XCheckWindowEvent(_neko_API.display, wslots[win].x11.window, 
-       ButtonPressMask | ButtonReleaseMask, &_neko_API.fr_ev)) 
-        _neko_HandleMouseEvents(win);
-
-    XWindowAttributes attribs;
-    XGetWindowAttributes(_neko_API.display, wslots[win].x11.window, &attribs);
-    wslots[win].cwidth = attribs.width;
-    wslots[win].cheight = attribs.height;
     neko_UpdateMousePos(win);
+    
+    while(QLength(_neko_API.display)) {
+        XEvent ev;
+        XNextEvent(_neko_API.display, &ev);
 
+        switch(ev.type) {
+            case ClientMessage:
+                wslots[win].is_running = false;
+                return;
+
+            case ConfigureNotify: 
+                {
+                    XConfigureEvent *xce = &ev.xconfigure;
+
+                    if(xce->width != wslots[win].cwidth || xce->height != wslots[win].cheight) {
+                        wslots[win].resize_notify = true;
+                        wslots[win].cwidth = xce->width;
+                        wslots[win].cheight = xce->height;
+                        wslots[win].vc_data.orig_x = wslots[win].cwidth / 2;
+                        wslots[win].vc_data.orig_y = wslots[win].cheight / 2;
+                    }
+                }
+                break;
+
+            case KeyPress:
+            case KeyRelease:
+                {
+                    XKeyEvent *kev = &ev.xkey;
+                    _neko_HandleKeyEvents(win, ev.type, kev);
+                }
+                break;
+
+            case ButtonPress:
+            case ButtonRelease:
+                {
+                    XButtonEvent *bev = &ev.xbutton;
+                    _neko_HandleMouseEvents(win, ev.type, bev);
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
 
     // Check if the window is used as in OpenGL context
     if(wslots[win].hints & NEKO_HINT_API_OPENGL)
@@ -313,19 +338,18 @@ void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s, bool is
 
 /// Unlike WIN32 api X11 doesn't have a callback system on events, which
 /// means that key events must be checked manually on every frame update 
-static void _neko_HandleKeyEvents(neko_Window win) {
+static void _neko_HandleKeyEvents(neko_Window win, int type, XKeyEvent *kev) {
     neko_Key key;
-    switch (_neko_API.fr_ev.type) {
+    switch (type) {
     case KeyPress: {
-        key = translateX11Key(XLookupKeysym(&_neko_API.fr_ev.xkey, 0));
+        key = translateX11Key(XLookupKeysym(kev, 0));
         _neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB, NEKO_INPUT_EVENT_TYPE_ACTIVE);
         break;
     }
         
     case KeyRelease:
-        key = translateX11Key(XLookupKeysym(&_neko_API.fr_ev.xkey, 0));
-        _neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB,
-            NEKO_INPUT_EVENT_TYPE_RELEASED);
+        key = translateX11Key(XLookupKeysym(kev, 0));
+        _neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB, NEKO_INPUT_EVENT_TYPE_RELEASED);
         break;
 
     default:
@@ -335,29 +359,22 @@ static void _neko_HandleKeyEvents(neko_Window win) {
 
 
 /// Check for any mouse button events
-static void _neko_HandleMouseEvents(neko_Window win) {
+static void _neko_HandleMouseEvents(neko_Window win, int type, XButtonEvent *bev) {
     neko_MouseButton btn = NEKO_MOUSE_BTN_UNKNOWN;
-    switch (_neko_API.fr_ev.type) {
+    switch (type) {
     case ButtonPress:
-        btn = translateX11Btn(_neko_API.fr_ev.xbutton.button);
+        btn = translateX11Btn(bev->button);
         _neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_ACTIVE);
         break;
     
     case ButtonRelease:
-        btn = translateX11Btn(_neko_API.fr_ev.xbutton.button);
+        btn = translateX11Btn(bev->button);
         _neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_RELEASED);
         break;
 
     default:
         break;
     }
-}
-
-
-/// Set new width and height from the recieved event
-static void _neko_HandleResize(neko_Window win) {
-    wslots[win].cwidth = _neko_API.fr_ev.xconfigure.width;
-    wslots[win].cheight = _neko_API.fr_ev.xconfigure.height;
 }
 
 
@@ -419,8 +436,8 @@ static void _neko_UpdateWindowSize(neko_Window win) {
     if(wslots[win].hints & NEKO_HINT_FIXED_SIZE) {
         XSizeHints size_hints = { 0 };
         size_hints.flags |= (PMinSize | PMaxSize);
-        size_hints.min_width = size_hints.max_width = wslots[win].swidth;
-        size_hints.min_height = size_hints.max_height = wslots[win].sheight;   
+        size_hints.min_width = size_hints.max_width = wslots[win].owidth;
+        size_hints.min_height = size_hints.max_height = wslots[win].oheight;   
         
         // Submit size hints
         XSetWMNormalHints(_neko_API.display, wslots[win].x11.window, &size_hints);
@@ -431,7 +448,7 @@ static void _neko_UpdateWindowSize(neko_Window win) {
 
         // Submit size hints
         XSetWMNormalHints(_neko_API.display, wslots[win].x11.window, &size_hints);
-        XResizeWindow(_neko_API.display, wslots[win].x11.window, wslots[win].swidth, wslots[win].sheight);
+        XResizeWindow(_neko_API.display, wslots[win].x11.window, wslots[win].owidth, wslots[win].oheight);
     }
 }
 

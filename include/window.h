@@ -43,21 +43,22 @@ typedef struct neko_VCData {
 typedef struct _neko_Window {
     int32_t cwidth;
     int32_t cheight;
+    int32_t owidth;
+    int32_t oheight;
     int32_t cposx;
     int32_t cposy;
-    int32_t swidth;
-    int32_t sheight;
     const char * window_title;
     int64_t mx;
     int64_t my;
     volatile sig_atomic_t is_running;
+    volatile sig_atomic_t resize_notify;
     neko_Hint hints;
     neko_VCData vc_data;
     neko_CursorMode cursor_mode;
     #if defined(_WIN32)
-        neko_SurfaceWIN32 win32;
+        neko_NativeWindowWin32 win32;
     #elif defined(__linux__)
-        neko_SurfaceX11 x11;
+        neko_NativeWindowX11 x11;
     #endif
 } _neko_Window;
 

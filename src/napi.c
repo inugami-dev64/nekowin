@@ -27,6 +27,11 @@ bool neko_IsVCMode(neko_Window win) {
 }
 
 
+bool neko_ResizeNotify(neko_Window win) {
+    return wslots[win].resize_notify;
+}
+
+
 const char *neko_GetTitle(neko_Window win) {
     return wslots[win].window_title;
 }
