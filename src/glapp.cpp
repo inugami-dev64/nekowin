@@ -206,11 +206,11 @@ void run(neko_Window win) {
             allow_toggle = false;
             if(hints & NEKO_HINT_FULL_SCREEN) {
                 neko_UpdateSizeMode(win, NEKO_HINT_NO_FULL_SCREEN);
-                printf("Switching to full screen\n");
+                printf("Switching to resizeable format\n");
             }
             else if(hints & NEKO_HINT_NO_FULL_SCREEN) {
                 neko_UpdateSizeMode(win, NEKO_HINT_FULL_SCREEN);
-                printf("Switching to resizeable format\n");
+                printf("Switching to fullscreen format\n");
             }
         }
 
