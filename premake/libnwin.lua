@@ -28,6 +28,7 @@ function libnwin.build()
             links {
                 "vulkan-1",
                 "gdi32",
+                "kernel32"
             }
 
         filter "platforms:Linux"

@@ -14,6 +14,7 @@
 #include <vulkan/vulkan_win32.h>
 
 
+
 // Extension attribute values
 #define WGL_CONTEXT_DEBUG_BIT_ARB               0x00000001
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB        0x00000001
@@ -96,7 +97,8 @@ typedef struct _neko_SurfaceWIN32 {
         _neko_Cursors cursors;
     } _neko_API = { 0 };
 
-	HWND __handles[__MAX_WSLOT_C] = { 0 };
+	static HWND __handles[__MAX_WSLOT_C] = { 0 };
+    static neko_Window __active_win;
 #endif
 
 #define __NEKO_CLASS_NAME           L"NWIN"
@@ -108,9 +110,6 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(HWND hwnd, UINT msg, WPARAM pa
 static void _neko_HandleSizeHints(neko_Window win, DWORD *ws);
 static void _neko_CreateGLContext(neko_Window win);
 static int _neko_FindPixelFormat();
-static void _neko_LoadWGL(neko_Window win);
-static void _neko_LoadWGLExtensions();
-static BOOL _neko_FindExtensionSupport(const char *ext);
 static WCHAR *_neko_CreateWideStringFromUTF8(const char *title);
 static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_msg);
 static uint32_t _neko_FindWindowIndexFromHandle(HWND handle);

@@ -53,9 +53,10 @@ neko_Window neko_NewWindow (
 ) {
     neko_assert(wslot_reserved + 1 >= __MAX_WSLOT_C, "There are no free window slots available");
     neko_Window win = (wslot_reserved++);
+    __active_win = win;
 
-    wslots[win].swidth = width;
-    wslots[win].sheight = height;
+    wslots[win].owidth = width;
+    wslots[win].oheight = height;
     wslots[win].hints = hints;
     wslots[win].window_title = title;
     wslots[win].vc_data.is_enabled = false;
@@ -78,13 +79,13 @@ neko_Window neko_NewWindow (
     _neko_HandleSizeHints(win, &window_style);
 
     LPWSTR w_title = _neko_CreateWideStringFromUTF8(wslots[win].window_title);
-    wslots[win].win32.handle = CreateWindowExW(0, __NEKO_CLASS_NAME, w_title, 
-											   window_style, 
-											   0, 
-											   0, 
-											   wslots[win].swidth, wslots[win].sheight, 
-										       NULL, NULL, 
-											   wslots[win].win32.instance, NULL);
+    CreateWindowExW(0, __NEKO_CLASS_NAME, w_title, 
+                    window_style, 
+                    0, 
+                    0, 
+                    wslots[win].owidth, wslots[win].oheight, 
+                    NULL, NULL, 
+                    wslots[win].win32.instance, NULL);
 
     // NOTE: Whenever using WIN32 api, you must keep in mind that the created window size is absolute and contains all window decorations as well.
     //       In order to find the actual client are we must call GetClientRect() function
@@ -115,7 +116,7 @@ neko_Window neko_NewWindow (
 
     // Create OpenGL context if necessary
     if(wslots[win].hints & NEKO_HINT_API_OPENGL)
-        _neko_CreateGLContext(win);
+        
 
     wslots[win].mx = 0;
     wslots[win].my = 0;
@@ -217,6 +218,7 @@ void neko_UpdateSizeMode(neko_Window win, neko_Hint hints) {
         MoveWindow(wslots[win].win32.handle, 0, 0, wslots[win].cwidth, wslots[win].cheight, TRUE);
     else MoveWindow(wslots[win].win32.handle, wslots[win].cposx, wslots[win].cposy, wslots[win].cwidth, wslots[win].cheight, TRUE);
     SetWindowLongPtr(wslots[win].win32.handle, GWL_STYLE, ws);
+    ShowWindow(wslots[win].win32.handle, SW_NORMAL);
 }
 
 
@@ -373,7 +375,15 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
     neko_MouseButton btn;
     neko_Window wid;
 
-    switch(msg) {  
+    switch(msg) {
+        case WM_CREATE:
+            wid = __active_win;
+            wslots[wid].win32.handle = handle;
+            _neko_ZeroValueErrorHandler(wid != UINT32_MAX, __LINE__, "Invalid handle");
+            if ((wslots[wid].hints & NEKO_HINT_API_OPENGL) == NEKO_HINT_API_OPENGL)
+                _neko_CreateGLContext(wid);
+            break;
+
         case WM_CLOSE:
         case WM_DESTROY:
             wid = _neko_FindWindowIndexFromHandle(handle);
@@ -455,19 +465,22 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
 
 
 static void _neko_HandleSizeHints(neko_Window win, DWORD *ws) {
+    HDC hdc = GetDC(wslots[win].win32.handle);
+
     // Check if no window size hints were given and if so give fixed size hint
     if (!(wslots[win].hints & NEKO_HINT_FIXED_SIZE) && !(wslots[win].hints & NEKO_HINT_RESIZEABLE) && !(wslots[win].hints & NEKO_HINT_FULL_SCREEN))
         wslots[win].hints |= NEKO_HINT_FIXED_SIZE;
 
     if(wslots[win].hints & NEKO_HINT_FIXED_SIZE) {
         *ws = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
-        wslots[win].cwidth = wslots[win].swidth;
+        wslots[win].cwidth = wslots[win].owidth;
         wslots[win].cheight = wslots[win].cheight;
     }
     else if(wslots[win].hints & NEKO_HINT_RESIZEABLE) {
         *ws = WS_OVERLAPPEDWINDOW;
-        wslots[win].cwidth = wslots[win].swidth;
-        wslots[win].cheight = wslots[win].sheight;
+        wslots[win].cwidth = wslots[win].owidth;
+        wslots[win].cheight = wslots[win].oheight;
+        _neko_API.wgl.MakeCurrent(hdc, wslots[win].win32.gl_context);
     }
     if(wslots[win].hints & NEKO_HINT_FULL_SCREEN) {
         wslots[win].cwidth = GetSystemMetrics(SM_CXSCREEN);
@@ -478,10 +491,6 @@ static void _neko_HandleSizeHints(neko_Window win, DWORD *ws) {
 
 
 static void _neko_CreateGLContext(neko_Window win) {
-    // If needed create a wgl dummy window and load wgl extensions
-    if(!_neko_API.wgl.is_init) 
-        _neko_LoadWGL(win);
-    
     PIXELFORMATDESCRIPTOR pfd = { 0 };
     pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
     pfd.nVersion = 1;
@@ -498,131 +507,10 @@ static void _neko_CreateGLContext(neko_Window win) {
     int attribs[__NEKO_WGL_PF_ATTRIB_C] = { 0 };
 
 
-    // TODO: Check if WGL_ARB_create_context extension is supported and create context using that extension when possible
-    if(_neko_API.wgl.ARB_create_context && _neko_API.wgl.ARB_create_context_profile) {
-        int index = 0, mask = 0;
-        
-        mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-        if(_neko_API.wgl.ARB_context_flush_control) {
-            attribs[index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_ARB;
-            attribs[index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB;
-        }
-
-        // Set OpenGL version 
-        attribs[index++] = WGL_CONTEXT_MAJOR_VERSION_ARB;
-        attribs[index++] = OPENGL_SUPPORTED_MAJOR;
-
-        attribs[index++] = WGL_CONTEXT_MINOR_VERSION_ARB;
-        attribs[index++] = OPENGL_SUPPORTED_MINOR;
-
-        attribs[index++] = WGL_CONTEXT_PROFILE_MASK_ARB;
-        attribs[index++] = mask;
-
-        #ifdef _DEBUG_
-            int flags = WGL_CONTEXT_DEBUG_BIT_ARB;
-            attribs[index++] = WGL_CONTEXT_FLAGS_ARB;
-            attribs[index++] = flags;
-        #endif
-
-        _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.gl_context = _neko_API.wgl.CreateContextAttribsARB(handle_to_device_context, NULL, attribs)),
-                                    (ULONG) __LINE__,
-                                    "Failed to create WGL context using WGL_ARB_create_context extension");
-    }
-
-    else {
-        _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context)),
-                                    (ULONG) __LINE__,
-                                    "Failed to create WGL context using wglCreateContext function");
-    }
-
+    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context)),
+                                (ULONG) __LINE__,
+                                "Failed to create WGL context using wglCreateContext functi on");
     _neko_API.wgl.MakeCurrent(handle_to_device_context, wslots[win].win32.gl_context);
-}
-
-
-static void _neko_LoadWGL(neko_Window win) {
-    _neko_API.wgl.is_init = TRUE;
-    PIXELFORMATDESCRIPTOR pfd = { 0 };
-    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    pfd.nVersion = 1;
-    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    pfd.iPixelType = PFD_TYPE_RGBA;
-    pfd.cColorBits = 24;
-
-    HDC dc = GetDC(NULL);
-
-    // Attempt to set pixel format for dummy context
-    int pixel_format = ChoosePixelFormat(dc, &pfd);
-    _neko_ZeroValueErrorHandler((ULONG) SetPixelFormat(dc, pixel_format, &pfd), (ULONG) __LINE__, 
-                                 "Failed to set pixel format for dummy context");
-
-    // Create and make use of the dummy context
-    HGLRC dummy_context = _neko_API.wgl.CreateContext(dc);
-    _neko_ZeroValueErrorHandler(pcast(ULONG, dummy_context), 
-                                (ULONG) __LINE__, 
-                                "Failed to create dummy context");
-
-    _neko_ZeroValueErrorHandler((ULONG) _neko_API.wgl.MakeCurrent(dc, dummy_context), 
-                                (ULONG) __LINE__, 
-                                "Failed to use correct wgl context");
-
-    // Load all required extension related functions
-    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.GetExtensionsStringEXT = (PFN_wglGetExtensionsStringEXT) _neko_API.wgl.GetProcAddress("wglGetExtensionsStringEXT")),
-                                (ULONG) __LINE__,
-                                "Failed to retrive wglGetExtensionsStringEXT()!");
-
-    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.GetExtensionsStringARB = (PFN_wglGetExtensionsStringARB) _neko_API.wgl.GetProcAddress("wglGetExtensionsStringARB")),
-                                (ULONG) __LINE__,
-                                "Failed to retrieve wglGetExtensionsStringARB()!");
-
-    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.SwapIntervalEXT = (PFN_wglSwapIntervalEXT) _neko_API.wgl.GetProcAddress("wglSwapIntervalEXT")), 
-                                (ULONG) __LINE__,
-                                "Failed to retrieve wglSwapIntervalEXT()!");
-
-    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.GetPixelFormatAttribivARB = (PFN_wglGetPixelFormatAttribivARB) _neko_API.wgl.GetProcAddress("wglGetPixelFormatAttribivARB")),
-                                (ULONG) __LINE__,
-                                "Failed to retrieve wglGetPixelFormatAttribivARB()!");
-
-    _neko_ZeroValueErrorHandler(pcast(ULONG, _neko_API.wgl.CreateContextAttribsARB = (PFN_wglCreateContextAttribsARB) _neko_API.wgl.GetProcAddress("wglCreateContextAttribsARB")),
-                                (ULONG) __LINE__,
-                                "Failed to retrieve wglCreateContextAttribsARB()!");
-
-
-
-    _neko_LoadWGLExtensions();
-    _neko_API.wgl.DeleteContext(dummy_context);
-}
-
-
-static void _neko_LoadWGLExtensions() {
-    _neko_API.wgl.EXT_swap_control                  =   _neko_FindExtensionSupport("WGL_EXT_swap_control");
-    _neko_API.wgl.ARB_multisample                   =   _neko_FindExtensionSupport("WGL_ARB_multisample");
-    _neko_API.wgl.ARB_framebuffer_sRGB              =   _neko_FindExtensionSupport("WGL_ARB_framebuffer_sRGB");
-    _neko_API.wgl.EXT_framebuffer_sRGB              =   _neko_FindExtensionSupport("WGL_EXT_framebuffer_sRGB");
-    _neko_API.wgl.ARB_pixel_format                  =   _neko_FindExtensionSupport("WGL_ARB_pixel_format");
-    _neko_API.wgl.ARB_create_context                =   _neko_FindExtensionSupport("WGL_ARB_create_context");
-    _neko_API.wgl.ARB_create_context_profile        =   _neko_FindExtensionSupport("WGL_ARB_create_context_profile");
-    _neko_API.wgl.EXT_create_context_es2_profile    =   _neko_FindExtensionSupport("WGL_EXT_create_context_es2_profile");
-    _neko_API.wgl.ARB_create_context_robustness     =   _neko_FindExtensionSupport("WGL_ARB_create_context_robustness");
-    _neko_API.wgl.ARB_create_context_no_error       =   _neko_FindExtensionSupport("WGL_ARB_create_context_no_error");
-    _neko_API.wgl.ARB_context_flush_control         =   _neko_FindExtensionSupport("WGL_ARB_context_flush_control");
-}
-
-
-static BOOL _neko_FindExtensionSupport(const char *ext) {
-    const char *extensions = _neko_API.wgl.GetExtensionsStringARB(_neko_API.wgl.GetCurrentDC());
-    neko_assert(extensions, "Failed to retrieve any extensions from the extension list");
-
-    const char *pt;
-    char *max = (char*) (extensions + strlen(extensions));
-
-    while(TRUE) {
-        pt = strstr(extensions, ext);
-        if(!pt) break;
-        if(pt && (pt > extensions ? *(pt - 1) == ' ' : pt == extensions) && (pt + strlen(ext) < max))
-            return TRUE;
-    }
-
-    return FALSE;
 }
 
 
@@ -639,7 +527,7 @@ static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_m
     if(!val) {
         DWORD code = GetLastError();
         fprintf(stderr, "Error code: 0x%08lx\n", code);
-        fprintf(stderr, "%s:%u; %s\n", __FILE__, __LINE__, err_msg);
+        fprintf(stderr, "%s:%u; %s\n", __FILE__, line, err_msg);
         exit(-1);
     }
 }

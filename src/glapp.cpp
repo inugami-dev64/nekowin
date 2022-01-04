@@ -178,16 +178,21 @@ void err_check(const std::string &func_name) {
 void run(neko_Window win) {
     bool allow_toggle = true;
     neko_Hint hints;
-    int32_t x, y;
+    int32_t x = 0, y = 0;
 
     while(neko_IsRunning(win)) {
         neko_UpdateWindow(win);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         err_check("glClearColor");
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+
+        int32_t x_prev = x, y_prev = y;
         neko_GetWindowSize(win, &x, &y);
-        glViewport(0, 0, x, y);
+        if (x != x_prev || y != y_prev) {
+            glViewport(0, 0, x, y);
+            printf("Window size %dx%d\n", x, y);
+        }
 
         err_check("glClear");
         glUseProgram(sh_program);
@@ -206,11 +211,9 @@ void run(neko_Window win) {
             allow_toggle = false;
             if(hints & NEKO_HINT_FULL_SCREEN) {
                 neko_UpdateSizeMode(win, NEKO_HINT_NO_FULL_SCREEN);
-                printf("Switching to resizeable format\n");
             }
             else if(hints & NEKO_HINT_NO_FULL_SCREEN) {
                 neko_UpdateSizeMode(win, NEKO_HINT_FULL_SCREEN);
-                printf("Switching to fullscreen format\n");
             }
         }
 
