@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <windows.h>
+#include <windowsx.h>
 #include <wingdi.h>
 #include <synchapi.h>    
 #include <stdio.h>
@@ -98,6 +99,7 @@ typedef struct _neko_SurfaceWIN32 {
     } _neko_API = { 0 };
 
 	static HWND __handles[__MAX_WSLOT_C] = { 0 };
+    static uint32_t __handle_c = 0;
     static neko_Window __active_win;
 #endif
 
