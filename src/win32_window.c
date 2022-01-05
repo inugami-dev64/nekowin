@@ -4,6 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define __NWIN_C
+#define __WIN32_WINDOW_C
 #include <nwin.h>
 
 

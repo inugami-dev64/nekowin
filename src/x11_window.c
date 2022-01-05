@@ -4,6 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define __NWIN_C
+#define __X11_WINDOW_C
 #include <nwin.h>
 
 
@@ -339,41 +340,38 @@ void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s, bool is
 /// Unlike WIN32 api X11 doesn't have a callback system on events, which
 /// means that key events must be checked manually on every frame update 
 static void _neko_HandleKeyEvents(neko_Window win, int type, XKeyEvent *kev) {
-    neko_Key key;
-    switch (type) {
-    case KeyPress: {
-        key = translateX11Key(XLookupKeysym(kev, 0));
-        _neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB, NEKO_INPUT_EVENT_TYPE_ACTIVE);
-        break;
-    }
-        
-    case KeyRelease:
-        key = translateX11Key(XLookupKeysym(kev, 0));
-        _neko_RegisterKeyEvent(key, NEKO_MOUSE_BTN_UNKNOWN, NEKO_INPUT_TYPE_KB, NEKO_INPUT_EVENT_TYPE_RELEASED);
-        break;
+    neko_HidEvent hid_ev = translateX11Key(XLookupKeysym(kev, 0));
 
-    default:
-        break;
+    switch (type) {
+        case KeyPress: 
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+            break;
+        
+        case KeyRelease:
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
+            break;
+
+        default:
+            break;
     }
 } 
 
 
 /// Check for any mouse button events
 static void _neko_HandleMouseEvents(neko_Window win, int type, XButtonEvent *bev) {
-    neko_MouseButton btn = NEKO_MOUSE_BTN_UNKNOWN;
-    switch (type) {
-    case ButtonPress:
-        btn = translateX11Btn(bev->button);
-        _neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_ACTIVE);
-        break;
-    
-    case ButtonRelease:
-        btn = translateX11Btn(bev->button);
-        _neko_RegisterKeyEvent(NEKO_KEY_UNKNOWN, btn, NEKO_INPUT_TYPE_MOUSE, NEKO_INPUT_EVENT_TYPE_RELEASED);
-        break;
+    neko_HidEvent hid_ev = translateX11Btn(bev->button);
 
-    default:
-        break;
+    switch (type) {
+        case ButtonPress:
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+            break;
+        
+        case ButtonRelease:
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
+            break;
+
+        default:
+            break;
     }
 }
 

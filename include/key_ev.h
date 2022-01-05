@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#ifdef __KEY_EV_C
+#if defined(__KEY_EV_C) || defined(__X11_WINDOW_C) || defined (__WIN32_WINDOW_C)
     #include <stdio.h>
     #include <stdlib.h>
     #include <stdarg.h>   
@@ -34,8 +34,16 @@ extern "C" {
 
     /// Key event registry arrays
     static char input_ch = 0x00;
-    bool active_ev[NEKO_INPUT_EV_COUNT] = { 0 };
-    bool released_ev[NEKO_INPUT_EV_COUNT] = { 0 };
+    static bool active_ev[NEKO_INPUT_EV_COUNT] = { 0 };
+    static bool released_ev[NEKO_INPUT_EV_COUNT] = { 0 };
+
+    /// Register new keyevent to key register
+    /// This function is meant to be called only by DENG platform dependant surface instances
+    void _neko_RegisterKeyEvent(neko_HidEvent event, neko_InputEventType ev_type);
+
+
+    /// Clean released key and mouse button array 
+    void _neko_UnreleaseKeys();
 #endif
 
 
@@ -45,25 +53,11 @@ neko_InputBits neko_CreateInputMask(uint32_t ev_c, ...);
 
 /// Unmask neko_InputBits instance and return a static array of neko_InputEv, which size is exactly 8.
 /// NOTE: Array elements that have no event attached use NEKO_KEY_UNKNOWN as a value
-neko_InputEv *neko_UnmaskInput(neko_InputBits bits);
-
-
-/// Register new keyevent to key register
-/// This function is meant to be called only by DENG platform dependant surface instances
-void _neko_RegisterKeyEvent (
-    neko_Key key, 
-    neko_MouseButton btn, 
-    neko_InputType in_type, 
-    neko_InputEventType ev_type
-);
-
-
-/// Clean released key and mouse button array 
-void _neko_UnreleaseKeys();
+neko_HidEvent *neko_UnmaskInput(neko_InputBits bits);
 
 
 /// Find given key or mouse button status from specified event array
-const bool neko_FindKeyStatus(uint8_t key, neko_InputEventType ev_type);
+bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_type);
 
 
 /// Find the active ascii input key

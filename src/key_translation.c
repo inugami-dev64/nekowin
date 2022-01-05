@@ -9,7 +9,7 @@
 #ifdef __linux__
 
 /// X11 key translations
-neko_Key translateX11Key(KeySym keysym) {
+neko_HidEvent translateX11Key(KeySym keysym) {
     switch (keysym) {   
         // X11 keys 
         case XK_space:              return NEKO_KEY_SPACE;
@@ -128,20 +128,19 @@ neko_Key translateX11Key(KeySym keysym) {
         case XK_Super_R:            return NEKO_KEY_RIGHT_SUPER;
         case XK_Menu:               return NEKO_KEY_MENU;
 
-        default:                    return NEKO_KEY_UNKNOWN;
+        default:                    return NEKO_HID_UNKNOWN;
     }
 }
 
-neko_MouseButton translateX11Btn(uint32_t button) {
-    switch (button)
-    {
+neko_HidEvent translateX11Btn(uint32_t button) {
+    switch (button) {
         case Button1: return NEKO_MOUSE_BTN_1;
         case Button2: return NEKO_MOUSE_BTN_2;
         case Button3: return NEKO_MOUSE_BTN_3;
         case Button4: return NEKO_MOUSE_SCROLL_UP;
         case Button5: return NEKO_MOUSE_SCROLL_DOWN;
         
-        default: return NEKO_MOUSE_BTN_UNKNOWN;
+        default: return NEKO_HID_UNKNOWN;
     }
 }
 
@@ -151,7 +150,7 @@ neko_MouseButton translateX11Btn(uint32_t button) {
 /// WIN32 api key translations
 #ifdef _WIN32
 
-neko_Key translateWIN32Key(uint16_t key_code) {
+neko_HidEvent translateWIN32Key(uint16_t key_code) {
     switch(key_code) {
         case VK_SPACE:              return NEKO_KEY_SPACE;
         case VK_OEM_7:              return NEKO_KEY_APOSTROPHE;
@@ -267,23 +266,20 @@ neko_Key translateWIN32Key(uint16_t key_code) {
         case VK_RMENU:              return NEKO_KEY_RIGHT_ALT;
         case VK_RWIN:               return NEKO_KEY_RIGHT_SUPER;
         case VK_MENU:               return NEKO_KEY_MENU;
-        default:                    return NEKO_KEY_UNKNOWN;
+        default:                    return NEKO_HID_UNKNOWN;
     }
 }
 
 
-neko_MouseButton translateWIN32Btn(UINT msg) {
+neko_HidEvent translateWIN32Btn(UINT msg) {
     switch(msg) {
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:          return NEKO_MOUSE_BTN_1;
-
         case WM_MBUTTONDOWN:
         case WM_MBUTTONUP:          return NEKO_MOUSE_BTN_2;
-
         case WM_RBUTTONDOWN:
         case WM_RBUTTONUP:          return NEKO_MOUSE_BTN_3;
-        
-        default:                    return NEKO_MOUSE_BTN_UNKNOWN;   
+        default:                    return NEKO_HID_UNKNOWN;   
     }
 }
 
