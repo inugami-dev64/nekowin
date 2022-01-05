@@ -37,9 +37,9 @@ extern "C" {
 #define neko_LoadGL gladLoadGL
 
 #include <vulkan/vulkan.h>
-#include <glad/glad.h>
-#include <key_translation.h>
-#include <key_ev.h>
+#include "../include/glad/glad.h"
+#include "../include/key_translation.h"
+#include "../include/key_ev.h"
 
 #ifdef __NWIN_C
 
@@ -143,7 +143,7 @@ void neko_UpdateMousePos(neko_Window win);
 /// Acquire all required Vulkan extension strings
 void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s, bool use_validation_layers);
 
-#include <napi.h>
+#include "../include/napi.h"
 
 #ifdef __cplusplus
 }
