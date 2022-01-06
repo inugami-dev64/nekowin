@@ -7,7 +7,7 @@ workspace "nwin"
     cleancommands { "make clean %{cfg.buildcfg}" }
     configurations { "Debug", "Release" }
     platforms { "Win32", "Linux" }
-    includedirs { "include" }
+    includedirs { "include", "include/third_party" }
     architecture "x86_64"
     pic "On"
 
@@ -24,8 +24,8 @@ workspace "nwin"
 
     -- Include Vulkan headers from the SDK path if using Windows
     filter "platforms:Win32" 
-        includedirs { "C:\\VulkanSDK\\*\\Include" }
-        libdirs { "C:\\VulkanSDK\\*\\Lib" }
+        includedirs { "C:\\VulkanSDK\\**\\Include" }
+        libdirs { "C:\\VulkanSDK\\**\\Lib" }
     filter {}
 
 newoption {

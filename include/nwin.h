@@ -37,7 +37,7 @@ extern "C" {
 #define neko_LoadGL gladLoadGL
 
 #include <vulkan/vulkan.h>
-#include "../include/glad/glad.h"
+#include <glad/glad.h>
 #include "../include/key_translation.h"
 #include "../include/key_ev.h"
 
