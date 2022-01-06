@@ -2,6 +2,7 @@
 Makefile
 build
 compile_commands.json
+compile_flags.txt
 .vscode
 .vs
 *.make
