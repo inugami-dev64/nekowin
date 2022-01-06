@@ -16,6 +16,9 @@ function glapp.build()
             "include/*.h"
         }
         links { "nwin" }
+
+        filter "platforms:Linux"
+            links { "GL", "GLX", "vulkan", "X11", "Xcursor", "dl" }
 end
 
 return glapp

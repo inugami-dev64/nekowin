@@ -62,7 +62,7 @@ bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_type) {
 }
 
 
-const char neko_GetActiveInput() { return input_ch; }
+const uint32_t neko_GetActiveInput() { return active_mask; }
 
 
 /// Clean released key and mouse button array 

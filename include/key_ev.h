@@ -33,7 +33,7 @@ extern "C" {
 
 
     /// Key event registry arrays
-    static char input_ch = 0x00;
+    static uint32_t active_mask = 0x00;
     static bool active_ev[NEKO_INPUT_EV_COUNT] = { 0 };
     static bool released_ev[NEKO_INPUT_EV_COUNT] = { 0 };
 
@@ -61,7 +61,7 @@ bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_type);
 
 
 /// Find the active ascii input key
-const char neko_GetActiveInput();
+const uint32_t neko_GetActiveInput();
 
 #ifdef __cplusplus
 }
