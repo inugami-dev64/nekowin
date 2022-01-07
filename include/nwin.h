@@ -141,7 +141,7 @@ void neko_UpdateMousePos(neko_Window win);
 
 
 /// Acquire all required Vulkan extension strings
-void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s, bool use_validation_layers);
+void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s);
 
 #include "../include/napi.h"
 

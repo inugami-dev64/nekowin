@@ -313,7 +313,7 @@ void neko_UpdateMousePos(neko_Window win) {
 }
 
 
-void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s, bool is_validation_layer) {
+void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s) {
     static char *sptr[3] = { 0 };
     static char lexts[3][32] = { 0 };
 
@@ -322,12 +322,12 @@ void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s, bool is
     (*p_exts)[1] = lexts[1];
     (*p_exts)[2] = lexts[2];
 
-    if(is_validation_layer) {
-        *ext_s = 3;
-        strcpy((*p_exts)[2], NEKO_VK_DEBUG_UTILS_EXT_NAME);
-    }
-
-    else *ext_s = 2;
+#ifdef _DEBUG
+    *ext_s = 3;
+    strcpy((*p_exts)[2], NEKO_VK_DEBUG_UTILS_EXT_NAME);
+#else
+    *ext_s = 2;
+#endif
     strcpy((*p_exts)[0], NEKO_VK_WSI_EXT_NAME);
     strcpy((*p_exts)[1], NEKO_VK_XLIB_SURFACE_EXT_NAME);
 }
