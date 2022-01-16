@@ -116,10 +116,6 @@ neko_Window neko_NewWindow (
     BOOL rid_stat = RegisterRawInputDevices(wslots[win].win32.rids, 2, sizeof(wslots[win].win32.rids[0]));
     _neko_ZeroValueErrorHandler((ULONG) rid_stat, (ULONG) __LINE__, "Failed to register raw input devices");
 
-    // Create OpenGL context if necessary
-    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
-        
-
     wslots[win].mx = 0;
     wslots[win].my = 0;
 
