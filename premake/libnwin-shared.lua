@@ -9,7 +9,7 @@ project "nwin"
 	language "C"
 	cdialect "C99"
 
-	includedirs { "../include" }
+	includedirs { "../include", "../include/third_party" }
 	files {
 		"../include/*.h",
 		"../src/*.c"
@@ -22,6 +22,9 @@ project "nwin"
 	filter "platforms:Win32"
 		removefiles { "../src/x11_window.c" }
 		defines { "_CRT_SECURE_NO_WARNINGS" }
+		includedirs { "C:\\VulkanSDK\\**\\Include" }
+        libdirs { "C:\\VulkanSDK\\**\\Lib" }
+		
 		links {
 			"vulkan-1",
 			"gdi32",

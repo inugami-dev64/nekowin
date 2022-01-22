@@ -21,5 +21,7 @@ project "glapp"
 		defines { "LIBNWIN_STATIC" }
 	end
 
-	filter "platforms:Linux"
-		links { "GL", "GLX", "vulkan", "X11", "Xcursor", "dl" }
+	filter "platforms:Win32"
+		includedirs { "C:\\VulkanSDK\\**\\Include" }
+
+	filter {}

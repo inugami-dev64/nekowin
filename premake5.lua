@@ -22,10 +22,6 @@ workspace "nwin"
         optimize "Speed"
         targetdir "build/release"
 
-    -- Include Vulkan headers from the SDK path if using Windows
-    filter "platforms:Win32" 
-        includedirs { "C:\\VulkanSDK\\**\\Include" }
-        libdirs { "C:\\VulkanSDK\\**\\Lib" }
     filter {}
 
 newoption {
