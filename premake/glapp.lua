@@ -24,4 +24,7 @@ project "glapp"
 	filter "platforms:Win32"
 		includedirs { "C:\\VulkanSDK\\**\\Include" }
 
+    filter "platforms:Linux"
+        links { "X11", "vulkan", "GL", "dl" }
+
 	filter {}
