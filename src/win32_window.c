@@ -177,7 +177,9 @@ void neko_UpdateSizeMode(neko_Window win, neko_Hint hints) {
 
     if(wslots[win].hints & NEKO_HINT_FULL_SCREEN)
         MoveWindow(wslots[win].win32.handle, 0, 0, wslots[win].cwidth, wslots[win].cheight, TRUE);
-    else MoveWindow(wslots[win].win32.handle, wslots[win].cposx, wslots[win].cposy, wslots[win].cwidth, wslots[win].cheight, TRUE);
+    else {
+        MoveWindow(wslots[win].win32.handle, wslots[win].cposx, wslots[win].cposy, wslots[win].cwidth, wslots[win].cheight, TRUE);
+    }
     SetWindowLongPtr(wslots[win].win32.handle, GWL_STYLE, ws);
     ShowWindow(wslots[win].win32.handle, SW_NORMAL);
 }
@@ -385,17 +387,27 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
             break;
         }
 
-        case WM_SIZE: {
-            RECT win_rect = { 0 };
-            GetWindowRect(handle, &win_rect);
-            wid = _neko_FindWindowIndexFromHandle(handle);
-            if (wid != UINT32_MAX) {
-                wslots[wid].cwidth = (int32_t)(win_rect.right - win_rect.left);
-                wslots[wid].cheight = (int32_t)(win_rect.bottom - win_rect.top);
-                wslots[wid].cposx = (int32_t)win_rect.left;
-                wslots[wid].cposy = (int32_t)win_rect.top;
+        case WM_SIZE:
+        case WM_MOVE:
+            {
+                if (!_full_screen_ev) {
+                    RECT win_rect = { 0 };
+                    GetWindowRect(handle, &win_rect);
+                    wid = _neko_FindWindowIndexFromHandle(handle);
+                    if (wid != UINT32_MAX) {
+                        wslots[wid].oposx = wslots[wid].cposx;
+                        wslots[wid].oposy = wslots[wid].cposy;
+                        wslots[wid].cwidth = (int32_t)(win_rect.right - win_rect.left);
+                        wslots[wid].cheight = (int32_t)(win_rect.bottom - win_rect.top);
+                        wslots[wid].cposx = (int32_t)win_rect.left;
+                        wslots[wid].cposy = (int32_t)win_rect.top;
+                    }
+                }
             }
-        }
+            break;
+
+        default:
+            break;
     }
 
     return DefWindowProc(handle, msg, wparam, lparam);
@@ -406,21 +418,26 @@ static void _neko_HandleSizeHints(neko_Window win, DWORD *ws) {
     HDC hdc = GetDC(wslots[win].win32.handle);
 
     // Check if no window size hints were given and if so give fixed size hint
-    if (!(wslots[win].hints & NEKO_HINT_FIXED_SIZE) && !(wslots[win].hints & NEKO_HINT_RESIZEABLE) && !(wslots[win].hints & NEKO_HINT_FULL_SCREEN))
+    if (!(wslots[win].hints & NEKO_HINT_FIXED_SIZE) && !(wslots[win].hints & NEKO_HINT_RESIZEABLE) && !(wslots[win].hints & NEKO_HINT_FULL_SCREEN)) {
         wslots[win].hints |= NEKO_HINT_FIXED_SIZE;
+        _full_screen_ev = false;
+    }
 
     if(wslots[win].hints & NEKO_HINT_FIXED_SIZE) {
+        _full_screen_ev = false;
         *ws = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
         wslots[win].cwidth = wslots[win].owidth;
         wslots[win].cheight = wslots[win].cheight;
     }
     else if(wslots[win].hints & NEKO_HINT_RESIZEABLE) {
+        _full_screen_ev = false;
         *ws = WS_OVERLAPPEDWINDOW;
         wslots[win].cwidth = wslots[win].owidth;
         wslots[win].cheight = wslots[win].oheight;
         _neko_API.wgl.MakeCurrent(hdc, wslots[win].win32.gl_context);
     }
     if(wslots[win].hints & NEKO_HINT_FULL_SCREEN) {
+        _full_screen_ev = true;
         wslots[win].cwidth = GetSystemMetrics(SM_CXSCREEN);
         wslots[win].cheight = GetSystemMetrics(SM_CYSCREEN);
         *ws = WS_POPUP | WS_VISIBLE;

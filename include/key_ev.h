@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 #if defined(__KEY_EV_C) || defined(__X11_WINDOW_C) || defined (__WIN32_WINDOW_C)
+    #include <nekodll.h>
     #include <stdio.h>
     #include <stdlib.h>
     #include <stdarg.h>   
@@ -48,20 +49,20 @@ extern "C" {
 
 
 /// Create new input bitmask from multiple input events
-neko_InputBits neko_CreateInputMask(uint32_t ev_c, ...);
+LIBNWIN_API neko_InputBits neko_CreateInputMask(uint32_t ev_c, ...);
 
 
 /// Unmask neko_InputBits instance and return a static array of neko_InputEv, which size is exactly 8.
 /// NOTE: Array elements that have no event attached use NEKO_KEY_UNKNOWN as a value
-neko_HidEvent *neko_UnmaskInput(neko_InputBits bits);
+LIBNWIN_API neko_HidEvent *neko_UnmaskInput(neko_InputBits bits);
 
 
 /// Find given key or mouse button status from specified event array
-bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_type);
+LIBNWIN_API bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_type);
 
 
 /// Find the active ascii input key
-const uint32_t neko_GetActiveInput();
+LIBNWIN_API const uint32_t neko_GetActiveInput();
 
 #ifdef __cplusplus
 }

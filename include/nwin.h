@@ -6,6 +6,7 @@
 #ifndef __NWIN_H
 #define __NWIN_H
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +38,7 @@ extern "C" {
 #define neko_LoadGL gladLoadGL
 
 #include <vulkan/vulkan.h>
+#include "../include/nekodll.h"
 #include <glad/glad.h>
 #include "../include/key_translation.h"
 #include "../include/key_ev.h"
@@ -88,40 +90,40 @@ typedef uint32_t neko_Window;
 /**************************/
 
 /// Initialise platform dependent backend api for nekowin library
-void neko_InitAPI();
+LIBNWIN_API void neko_InitAPI();
 
 
 /// Get the initialisation status of the API
-bool neko_APIInitStatus();
+LIBNWIN_API bool neko_APIInitStatus();
 
 
 /// Deinitialise platform dependent backend api for nekowin library
-void neko_DeinitAPI();
+LIBNWIN_API void neko_DeinitAPI();
 
 
 /// Create new platform independant neko_Window instance for Vulkan or OpenGL
-neko_Window neko_NewWindow(int32_t width, int32_t height, neko_Hint hints, const char *title);
+LIBNWIN_API neko_Window neko_NewWindow(int32_t width, int32_t height, neko_Hint hints, const char *title);
 
 
 /// Initialise the given neko_Window instance for Vulkan surface 
-VkResult neko_InitVKSurface(neko_Window win, VkInstance i, VkSurfaceKHR *s);
+LIBNWIN_API VkResult neko_InitVKSurface(neko_Window win, VkInstance i, VkSurfaceKHR *s);
 
 
 /// Update window events and key arrays
 /// This function is meant to be called in every frame
-void neko_UpdateWindow(neko_Window win);
+LIBNWIN_API void neko_UpdateWindow(neko_Window win);
 
 
 /// Set new resettable hints for neko window
-void neko_UpdateSizeMode(neko_Window win, neko_Hint hints);
+LIBNWIN_API void neko_UpdateSizeMode(neko_Window win, neko_Hint hints);
 
 
 /// Destroy window instance and free all resources that were used
-void neko_DestroyWindow(neko_Window win);
+LIBNWIN_API void neko_DestroyWindow(neko_Window win);
 
 
 /// Check if window is still running and no close events have happened
-bool neko_IsRunning(neko_Window win);
+LIBNWIN_API bool neko_IsRunning(neko_Window win);
 
 
 /****************************************/
@@ -129,19 +131,19 @@ bool neko_IsRunning(neko_Window win);
 /****************************************/
 
 /// Change mouse cursor mode within neko window
-void neko_SetMouseCursorMode(neko_Window win, neko_CursorMode cur_mode);
+LIBNWIN_API void neko_SetMouseCursorMode(neko_Window win, neko_CursorMode cur_mode);
 
 
 /// Force mouse cursor to certain location on window
-void neko_SetMouseCoords(neko_Window win, uint64_t x, uint64_t y);
+LIBNWIN_API void neko_SetMouseCoords(neko_Window win, uint64_t x, uint64_t y);
 
 
 /// Synchronise mouse position in neko_Window
-void neko_UpdateMousePos(neko_Window win);
+LIBNWIN_API void neko_UpdateMousePos(neko_Window win);
 
 
 /// Acquire all required Vulkan extension strings
-void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s);
+LIBNWIN_API void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s);
 
 #include "../include/napi.h"
 

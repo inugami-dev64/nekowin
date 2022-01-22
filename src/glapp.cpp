@@ -3,7 +3,6 @@
 #include <thread>
 #include <chrono>
 
-#include <glad/glad.h>
 #include <vulkan/vulkan.h>
 #include <nwin.h>
 #define _LOG_SIZE   512
@@ -284,6 +283,7 @@ int main() {
         std::exit(-1);
     }
 
+    neko_SetMouseCursorMode(win, NEKO_CURSOR_MODE_STANDARD);
     const unsigned char *ver = glGetString(GL_VERSION);
     compile_shaders();
     create_buffer_handles();

@@ -3,22 +3,23 @@
 --- file: premake5.lua - main premake configuration file
 --- author: Karl-Mihkel Ott
 
-local glapp = {}
 
-function glapp.build()
-    project "glapp"
-        kind "ConsoleApp"
-        language "C++"
-        cppdialect "C++14"
+project "glapp"
+	basedir("..")
+	kind "ConsoleApp"
+	language "C++"
+	cppdialect "C++14"
 
-        files { 
-            "src/glapp.cpp",
-            "include/*.h"
-        }
-        links { "nwin" }
+	includedirs { "../include" }
+	files { 
+		"../src/glapp.cpp",
+		"../include/*.h"
+	}
+	links { "nwin" }
+	
+	if not _OPTIONS["shared"] then
+		defines { "LIBNWIN_STATIC" }
+	end
 
-        filter "platforms:Linux"
-            links { "GL", "GLX", "vulkan", "X11", "Xcursor", "dl" }
-end
-
-return glapp
+	filter "platforms:Linux"
+		links { "GL", "GLX", "vulkan", "X11", "Xcursor", "dl" }

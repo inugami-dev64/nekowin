@@ -38,10 +38,12 @@ newoption {
     description = "Build shared libraries instead of static ones"
 }
 
-local libnwin = require("premake/libnwin")
-libnwin.build()
+if _OPTIONS["shared"] then
+	require "premake/libnwin-shared"
+else
+	require "premake/libnwin-static"
+end
 
 if not _OPTIONS["no-test-app"] then
-    local glapp = require("premake/glapp")
-    glapp.build()
+    require "premake/glapp"
 end

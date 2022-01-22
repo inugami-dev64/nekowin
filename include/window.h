@@ -45,6 +45,8 @@ typedef struct _neko_Window {
     int32_t cheight;
     int32_t owidth;
     int32_t oheight;
+    int32_t oposx;
+    int32_t oposy;
     int32_t cposx;
     int32_t cposy;
     const char * window_title;

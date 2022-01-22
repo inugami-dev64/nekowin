@@ -3,15 +3,9 @@
 --- file: libnwin.lua - libnwin build configuration
 --- author: Karl-Mihkel Ott
 
-local libnwin = {}
-
-function libnwin.build() 
     project "nwin"
-        if _OPTIONS["shared"] then
-            kind "SharedLib"
-        else 
-            kind "StaticLib"
-        end
+		kind "StaticLib"
+        
         language "C"
         cdialect "C99"
 
@@ -43,7 +37,3 @@ function libnwin.build()
             }
 
         filter {}
-end
-
-
-return libnwin

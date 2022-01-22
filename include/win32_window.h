@@ -101,6 +101,7 @@ typedef struct _neko_SurfaceWIN32 {
 	static HWND __handles[__MAX_WSLOT_C] = { 0 };
     static uint32_t __handle_c = 0;
     static neko_Window __active_win;
+    static bool _full_screen_ev = false;
 #endif
 
 #define __NEKO_CLASS_NAME           L"NWIN"
