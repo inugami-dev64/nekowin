@@ -35,7 +35,6 @@ neko_InputBits neko_CreateInputMask(uint32_t ev_c, ...) {
 /// NOTE: Array elements that have no event index attached use NEKO_KEY_UNKNOWN as a value
 neko_HidEvent *neko_UnmaskInput(neko_InputBits bits) {
     static neko_HidEvent out_ev[8] = {0};
-    uint8_t ev = NEKO_HID_UNKNOWN;
 
     for(int32_t i = 7; i >= 0; i--) {
         // If not the last index, shift input bits right
@@ -62,7 +61,7 @@ bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_type) {
 }
 
 
-const uint32_t neko_GetActiveInput() { return active_mask; }
+uint32_t neko_GetActiveInput() { return active_mask; }
 
 
 /// Clean released key and mouse button array 

@@ -72,13 +72,15 @@ typedef struct {
 #endif
 
 
-/// Inner function declarations 
-static void _neko_HandleKeyEvents(neko_Window win, int type, XKeyEvent *kev); 
-static void _neko_HandleMouseEvents(neko_Window win, int type, XButtonEvent *bev); 
-static void _neko_GetVisualInfo(neko_Window win);
-static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data);
-static void _neko_UpdateWindowSize(neko_Window win);
-static void _neko_CreateGLContext(neko_Window win);
-static void _neko_LoadCursors();
+#ifdef __X11_WINDOW_C
+    /// Inner function declarations 
+    static void _neko_HandleKeyEvents(int type, XKeyEvent *kev); 
+    static void _neko_HandleMouseEvents(int type, XButtonEvent *bev); 
+    static void _neko_GetVisualInfo(neko_Window win);
+    static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data);
+    static void _neko_UpdateWindowSize(neko_Window win);
+    static void _neko_CreateGLContext(neko_Window win);
+    static void _neko_LoadCursors();
+#endif
 
 #endif

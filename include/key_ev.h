@@ -33,10 +33,12 @@ extern "C" {
     #include <nwin.h>
 
 
+#ifdef __KEY_EV_C
     /// Key event registry arrays
     static uint32_t active_mask = 0x00;
     static bool active_ev[NEKO_INPUT_EV_COUNT] = { 0 };
     static bool released_ev[NEKO_INPUT_EV_COUNT] = { 0 };
+#endif
 
     /// Register new keyevent to key register
     /// This function is meant to be called only by DENG platform dependant surface instances
@@ -62,7 +64,7 @@ LIBNWIN_API bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_
 
 
 /// Find the active ascii input key
-LIBNWIN_API const uint32_t neko_GetActiveInput();
+LIBNWIN_API uint32_t neko_GetActiveInput();
 
 #ifdef __cplusplus
 }

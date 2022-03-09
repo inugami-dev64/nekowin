@@ -176,7 +176,7 @@ void neko_UpdateWindow(neko_Window win) {
             case KeyRelease:
                 {
                     XKeyEvent *kev = &ev.xkey;
-                    _neko_HandleKeyEvents(win, ev.type, kev);
+                    _neko_HandleKeyEvents(ev.type, kev);
                 }
                 break;
 
@@ -184,7 +184,7 @@ void neko_UpdateWindow(neko_Window win) {
             case ButtonRelease:
                 {
                     XButtonEvent *bev = &ev.xbutton;
-                    _neko_HandleMouseEvents(win, ev.type, bev);
+                    _neko_HandleMouseEvents(ev.type, bev);
                 }
                 break;
 
@@ -339,7 +339,7 @@ void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s) {
 
 /// Unlike WIN32 api X11 doesn't have a callback system on events, which
 /// means that key events must be checked manually on every frame update 
-static void _neko_HandleKeyEvents(neko_Window win, int type, XKeyEvent *kev) {
+static void _neko_HandleKeyEvents(int type, XKeyEvent *kev) {
     neko_HidEvent hid_ev = translateX11Key(XLookupKeysym(kev, 0));
 
     switch (type) {
@@ -358,7 +358,7 @@ static void _neko_HandleKeyEvents(neko_Window win, int type, XKeyEvent *kev) {
 
 
 /// Check for any mouse button events
-static void _neko_HandleMouseEvents(neko_Window win, int type, XButtonEvent *bev) {
+static void _neko_HandleMouseEvents(int type, XButtonEvent *bev) {
     neko_HidEvent hid_ev = translateX11Btn(bev->button);
 
     switch (type) {
@@ -458,7 +458,7 @@ static void _neko_CreateGLContext(neko_Window win) {
 
 
 /// Load all available platform specific nekowin cursors
-static void _neko_LoadCursors(neko_Window win) {
+static void _neko_LoadCursors() {
     _neko_API.cursors.standard = XCreateFontCursor(_neko_API.display, XC_left_ptr);
     _neko_API.cursors.pointer = XCreateFontCursor(_neko_API.display, XC_hand2);
     _neko_API.cursors.waiting = XCreateFontCursor(_neko_API.display, XC_watch);
