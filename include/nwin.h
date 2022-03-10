@@ -22,7 +22,8 @@ extern "C" {
 
     #ifdef __linux__
         #include <X11/keysym.h>
-        #include <X11/XKBlib.h> #endif
+        #include <X11/XKBlib.h> 
+    #endif
 #endif
 
 
