@@ -6,7 +6,7 @@
 #ifndef __X11_SURFACE_H
 #define __X11_SURFACE_H
 
-#define EVENT_MASK KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
+#define EVENT_MASK KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
                    StructureNotifyMask | ClientMessage
                    
 
@@ -76,6 +76,7 @@ typedef struct {
     /// Inner function declarations 
     static void _neko_HandleKeyEvents(int type, XKeyEvent *kev); 
     static void _neko_HandleMouseEvents(int type, XButtonEvent *bev); 
+    static void _neko_HandleMouseMovement(neko_Window win, int x, int y);
     static void _neko_GetVisualInfo(neko_Window win);
     static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data);
     static void _neko_UpdateWindowSize(neko_Window win);

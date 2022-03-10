@@ -80,6 +80,7 @@ neko_Window neko_NewWindow (
     wslots[win].vc_data.y = 0;
  
     // Retrieve visual info about the window
+    XInitThreads();
     _neko_GetVisualInfo(win);
 
     XSetWindowAttributes swa = { 0 };
@@ -147,8 +148,9 @@ void neko_UpdateWindow(neko_Window win) {
     // Set notfiy booleans to false for updating resize update information
     wslots[win].resize_notify = false;
     _neko_UnreleaseKeys();
-    neko_UpdateMousePos(win);
+    /*neko_UpdateMousePos(win);*/
     
+    XFlush(_neko_API.display);
     while(QLength(_neko_API.display)) {
         XEvent ev;
         XNextEvent(_neko_API.display, &ev);
@@ -156,6 +158,7 @@ void neko_UpdateWindow(neko_Window win) {
         switch(ev.type) {
             case ClientMessage:
                 wslots[win].is_running = false;
+                printf("Window closing was required\n");
                 return;
 
             case ConfigureNotify: 
@@ -185,6 +188,13 @@ void neko_UpdateWindow(neko_Window win) {
                 {
                     XButtonEvent *bev = &ev.xbutton;
                     _neko_HandleMouseEvents(ev.type, bev);
+                }
+                break;
+
+            case MotionNotify:
+                {
+                    XMotionEvent *mev = &ev.xmotion;
+                    _neko_HandleMouseMovement(win, mev->x, mev->y);
                 }
                 break;
 
@@ -268,48 +278,8 @@ void neko_UpdateMousePos(neko_Window win) {
     Window return_window;
     int win_x, win_y, x, y;
     unsigned int mask;
-    XQueryPointer(_neko_API.display, wslots[win].x11.window, &return_window, &return_window, 
-        &win_x, &win_y, &x, &y, &mask);
-
-    if(wslots[win].vc_data.is_enabled) {
-        int64_t movement_x = (int64_t) x - wslots[win].vc_data.orig_x;
-        int64_t movement_y = (int64_t) y - wslots[win].vc_data.orig_y;
-
-        if(x != wslots[win].vc_data.orig_x || y != wslots[win].vc_data.orig_y)
-            neko_SetMouseCoords(win, wslots[win].vc_data.orig_x, wslots[win].vc_data.orig_y);
-
-        // Check for overflow on x position
-        if(wslots[win].vc_data.x + movement_x >= __max_vc_x) {
-            if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.x = __min_vc_x;
-        }
-        
-        else if(wslots[win].vc_data.x + movement_x <= __min_vc_x) {
-            if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.x = __max_vc_x;
-        }
-
-        else wslots[win].vc_data.x += movement_x;
-
-
-        // Check for overflow on y position
-        if(wslots[win].vc_data.y + movement_y >= __max_vc_y) {
-            if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.y = __min_vc_y;
-        }
-        
-        else if(wslots[win].vc_data.y + movement_y <= __min_vc_y) {
-            if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.y = __max_vc_y;
-        }
-
-        else wslots[win].vc_data.y += movement_y;
-    }
-
-    else {
-        wslots[win].mx = (int64_t) x;
-        wslots[win].my = (int64_t) y;
-    }
+    XQueryPointer(_neko_API.display, wslots[win].x11.window, &return_window, &return_window, &win_x, &win_y, &x, &y, &mask);
+    _neko_HandleMouseMovement(win, x, y);
 }
 
 
@@ -376,6 +346,50 @@ static void _neko_HandleMouseEvents(int type, XButtonEvent *bev) {
 }
 
 
+// Set the new mouse position according to the current mouse movement mode
+static void _neko_HandleMouseMovement(neko_Window win, int x, int y) {
+    if(wslots[win].vc_data.is_enabled) {
+        int64_t movement_x = (int64_t) x - wslots[win].vc_data.orig_x;
+        int64_t movement_y = (int64_t) y - wslots[win].vc_data.orig_y;
+
+        if(x != wslots[win].vc_data.orig_x || y != wslots[win].vc_data.orig_y)
+            neko_SetMouseCoords(win, wslots[win].vc_data.orig_x, wslots[win].vc_data.orig_y);
+
+        // Check for overflow on x position
+        if(wslots[win].vc_data.x + movement_x >= __max_vc_x) {
+            if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.x = __min_vc_x;
+        }
+        
+        else if(wslots[win].vc_data.x + movement_x <= __min_vc_x) {
+            if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.x = __max_vc_x;
+        }
+
+        else wslots[win].vc_data.x += movement_x;
+
+
+        // Check for overflow on y position
+        if(wslots[win].vc_data.y + movement_y >= __max_vc_y) {
+            if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.y = __min_vc_y;
+        }
+        
+        else if(wslots[win].vc_data.y + movement_y <= __min_vc_y) {
+            if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
+                wslots[win].vc_data.y = __max_vc_y;
+        }
+
+        else wslots[win].vc_data.y += movement_y;
+    }
+
+    else {
+        wslots[win].mx = (int64_t) x;
+        wslots[win].my = (int64_t) y;
+    }
+}
+
+
 static void _neko_GetVisualInfo(neko_Window win) {
     if(wslots[win].hints & NEKO_HINT_API_OPENGL) {
         GLint attrs[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
@@ -406,8 +420,7 @@ static void _neko_SendClientMessage(neko_Window win, Atom msg_type, long *data) 
     ev.xclient.data.l[3] = data[3];
     ev.xclient.data.l[4] = data[4];
 
-    XSendEvent(_neko_API.display, _neko_API.root, False, 
-        SubstructureNotifyMask | SubstructureRedirectMask, &ev);
+    XSendEvent(_neko_API.display, _neko_API.root, False, SubstructureNotifyMask | SubstructureRedirectMask, &ev);
 }
 
 
