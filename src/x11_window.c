@@ -14,6 +14,7 @@
 
 /// Initialise platform dependent backend api for nekowin library
 void neko_InitAPI() {
+    XInitThreads();
     _neko_API.display = XOpenDisplay(NULL);
     _neko_API.root = DefaultRootWindow(_neko_API.display);
     _neko_API.scr = DefaultScreen(_neko_API.display);
@@ -65,7 +66,7 @@ neko_Window neko_NewWindow (
 ) {
     neko_assert(_neko_API.is_init, "Please initialise neko library with neko_InitAPI() before creating new windows");
     neko_assert(wslot_reserved + 1 >= __MAX_WSLOT_C, "There are no free window slots available");
-   neko_Window win = (wslot_reserved++);
+    neko_Window win = (wslot_reserved++);
 
     // Fill the window structure
     wslots[win].owidth = width = wslots[win].cwidth = width;
@@ -80,7 +81,6 @@ neko_Window neko_NewWindow (
     wslots[win].vc_data.y = 0;
  
     // Retrieve visual info about the window
-    XInitThreads();
     _neko_GetVisualInfo(win);
 
     XSetWindowAttributes swa = { 0 };
@@ -119,6 +119,7 @@ neko_Window neko_NewWindow (
         _neko_CreateGLContext(win);
 
     wslots[win].is_running = true;
+    XFlush(_neko_API.display);
     return win;
 }
 
@@ -148,9 +149,8 @@ void neko_UpdateWindow(neko_Window win) {
     // Set notfiy booleans to false for updating resize update information
     wslots[win].resize_notify = false;
     _neko_UnreleaseKeys();
-    /*neko_UpdateMousePos(win);*/
     
-    XFlush(_neko_API.display);
+    XPending(_neko_API.display);
     while(QLength(_neko_API.display)) {
         XEvent ev;
         XNextEvent(_neko_API.display, &ev);
@@ -206,6 +206,8 @@ void neko_UpdateWindow(neko_Window win) {
     // Check if the window is used as in OpenGL context
     if(wslots[win].hints & NEKO_HINT_API_OPENGL)
         glXSwapBuffers(_neko_API.display, wslots[win].x11.window);
+
+    XFlush(_neko_API.display);
 }
 
 
