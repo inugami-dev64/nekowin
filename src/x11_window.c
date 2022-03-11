@@ -158,7 +158,6 @@ void neko_UpdateWindow(neko_Window win) {
         switch(ev.type) {
             case ClientMessage:
                 wslots[win].is_running = false;
-                printf("Window closing was required\n");
                 return;
 
             case ConfigureNotify: 
