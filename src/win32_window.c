@@ -78,6 +78,8 @@ neko_Window neko_NewWindow (
 
     // Check size hints and resize accordingly
     _neko_HandleSizeHints(win, &window_style);
+    wslots[win].owidth = wslots[win].cwidth;
+    wslots[win].oheight = wslots[win].cheight;
 
     wslots[win].win32.handle = CreateWindowExA(0, __NEKO_CLASS_NAME, wslots[win].window_title,
                                                window_style,
@@ -92,8 +94,8 @@ neko_Window neko_NewWindow (
     //       In order to find the actual client are we must call GetClientRect() function
     RECT rect;
     GetClientRect(wslots[win].win32.handle, &rect);
-    wslots[win].cwidth = rect.right;
-    wslots[win].cheight = rect.bottom;
+    wslots[win].cwidth = (int32_t) (rect.right - rect.left);
+    wslots[win].cheight = (int32_t) (rect.bottom - rect.top);
 
 
     __handles[win] = wslots[win].win32.handle;
@@ -129,6 +131,7 @@ neko_Window neko_NewWindow (
 
 VkResult neko_InitVKSurface(neko_Window win, VkInstance i, VkSurfaceKHR *s) {
     VkWin32SurfaceCreateInfoKHR surface_info;
+    memset(&surface_info, 0, sizeof(surface_info));
     surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     surface_info.hinstance = wslots[win].win32.instance;
     surface_info.hwnd = wslots[win].win32.handle;
@@ -391,7 +394,7 @@ static LRESULT CALLBACK _neko_Win32MessageHandler (
             {
                 if (!_full_screen_ev) {
                     RECT win_rect = { 0 };
-                    GetWindowRect(handle, &win_rect);
+                    GetClientRect(handle, &win_rect);
                     wid = _neko_FindWindowIndexFromHandle(handle);
                     if (wid != UINT32_MAX) {
                         wslots[wid].oposx = wslots[wid].cposx;
