@@ -41,7 +41,7 @@ endif()
 
 # Build static library
 if(BUILD_STATIC_LIBNWIN)
-    add_library(${LIBNWIN_STATIC_TARGET}
+    add_library(${LIBNWIN_STATIC_TARGET} STATIC
         ${LIBNWIN_HEADERS}
         ${LIBNWIN_SOURCES}
     )
@@ -53,7 +53,7 @@ if(BUILD_STATIC_LIBNWIN)
 
     target_compile_definitions(${LIBNWIN_STATIC_TARGET}
         PRIVATE LIBNWIN_EXPORT_LIBRARY
-        PRIVATE LIBNWIN_STATIC
+        PUBLIC LIBNWIN_STATIC
     )
 
     # OS dependent dependencies
@@ -77,13 +77,18 @@ if(BUILD_STATIC_LIBNWIN)
             PUBLIC gdi32
             PUBLIC kernel32
         )
+		
+		if(NOT VULKAN_SDK_PATH STREQUAL "")
+            target_include_directories(${LIBNWIN_STATIC_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Include)
+            target_link_directories(${LIBNWIN_STATIC_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Lib)
+        endif()
     endif()
 endif()
 
 
 # Build shared library
 if(BUILD_SHARED_LIBNWIN)
-    add_library(${LIBNWIN_SHARED_TARGET}
+    add_library(${LIBNWIN_SHARED_TARGET} SHARED
         ${LIBNWIN_HEADERS}
         ${LIBNWIN_SOURCES}
     )
@@ -95,7 +100,6 @@ if(BUILD_SHARED_LIBNWIN)
 
     target_compile_definitions(${LIBNWIN_SHARED_TARGET}
         PRIVATE LIBNWIN_EXPORT_LIBRARY
-        PRIVATE LIBNWIN_STATIC
     )
 
     # OS dependent dependencies
@@ -119,5 +123,10 @@ if(BUILD_SHARED_LIBNWIN)
             PUBLIC gdi32
             PUBLIC kernel32
         )
+		
+		if(NOT VULKAN_SDK_PATH STREQUAL "")
+            target_include_directories(${LIBNWIN_SHARED_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Include)
+            target_link_directories(${LIBNWIN_SHARED_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Lib)
+        endif()
     endif()
 endif()

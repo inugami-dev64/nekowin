@@ -20,7 +20,7 @@ include(cmake/libnwin.cmake)
 
 # Set appropriate compiler flags
 if(MSVC)
-    add_compile_options(/W4 /WX -D_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(/W4 -D_CRT_SECURE_NO_WARNINGS /std:c++14)
 
     if(CMAKE_BUILD_TYPE MATCHES Debug)
         add_compile_options(/0d)
