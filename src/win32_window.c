@@ -68,10 +68,10 @@ neko_Window neko_NewWindow (
     WNDCLASSW class = { 0 };
     class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     class.lpfnWndProc = _neko_Win32MessageHandler;
-    class.hInstance = wslots[win].win32.instance = GetModuleHandleW(NULL);
+    class.hInstance = wslots[win].win32.instance = GetModuleHandleA(NULL);
     class.lpszClassName = __NEKO_CLASS_NAME;
 
-    _neko_ZeroValueErrorHandler((ULONG) RegisterClassW(&class), 
+    _neko_ZeroValueErrorHandler((ULONG) RegisterClassA(&class), 
                                 (ULONG) __LINE__, 
                                 "Failed to register neko window class");
 
@@ -79,15 +79,15 @@ neko_Window neko_NewWindow (
     // Check size hints and resize accordingly
     _neko_HandleSizeHints(win, &window_style);
 
-    LPWSTR w_title = _neko_CreateWideStringFromUTF8(wslots[win].window_title);
-    CreateWindowExW(0, __NEKO_CLASS_NAME, w_title,
-                    window_style,
-                    0, 
-                    0, 
-                    wslots[win].owidth, wslots[win].oheight, 
-                    NULL, NULL, 
-                    wslots[win].win32.instance, NULL);
+    wslots[win].win32.handle = CreateWindowExA(0, __NEKO_CLASS_NAME, wslots[win].window_title,
+                                               window_style,
+                                               0, 
+                                               0, 
+                                               wslots[win].owidth, wslots[win].oheight, 
+                                               NULL, NULL, 
+                                               wslots[win].win32.instance, NULL);
 
+    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.handle), (ULONG)__LINE__, "Failed to create win32 window");
     // NOTE: Whenever using WIN32 api, you must keep in mind that the created window size is absolute and contains all window decorations as well.
     //       In order to find the actual client are we must call GetClientRect() function
     RECT rect;
@@ -100,8 +100,7 @@ neko_Window neko_NewWindow (
     __handle_c++;
                                     
     // Free all memory allocated for the wide title
-    free(w_title);
-    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.handle), (ULONG) __LINE__, "Failed to initialise win32 window");
+    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.handle), (ULONG) __LINE__, "Failed get win32 window client rect");
 
     wslots[win].win32.rids[0].usUsagePage = 0x01;
     wslots[win].win32.rids[0].usUsage = 0x02;
