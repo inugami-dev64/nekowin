@@ -36,7 +36,7 @@ endif()
 
 # Check if debug mode is used
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    add_definitions(_DEBUG)
+    add_compile_options(-D_DEBUG)
 endif()
 
 # Build static library

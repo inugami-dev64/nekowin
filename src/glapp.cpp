@@ -180,6 +180,7 @@ void run(neko_Window win) {
     int32_t x = 0, y = 0;
 
     while(neko_IsRunning(win)) {
+        //neko_SetVSync(win, false);
         neko_UpdateWindow(win);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         err_check("glClearColor");

@@ -145,6 +145,9 @@ LIBNWIN_API void neko_UpdateMousePos(neko_Window win);
 /// Acquire all required Vulkan extension strings
 LIBNWIN_API void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s);
 
+/// Set VSync on or off
+LIBNWIN_API void neko_SetVSync(neko_Window _win, bool _on);
+
 #include "../include/napi.h"
 
 #ifdef __cplusplus

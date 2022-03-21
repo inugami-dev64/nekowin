@@ -45,12 +45,18 @@ typedef struct {
     Window window;
     GC gc;
     GLXContext glc;
+    GLXDrawable drawable;
     XVisualInfo *p_vi;
     XVisualInfo vi;
 } neko_NativeWindowX11;
 
 
 #ifdef __NWIN_C 
+    // GLX extension name macros
+    #define GLX_SWAP_CONTROL_EXT_NAME       "GLX_EXT_swap_control"
+    #define GLX_SWAP_CONTROL_SGI_NAME       "GLX_SGI_swap_control"
+    #define GLX_SWAP_CONTROL_MESA_NAME      "GLX_MESA_swap_control"
+
     /// Structure for storing all cursor data
     typedef struct _neko_XCursors {
         Cursor standard;
@@ -59,6 +65,9 @@ typedef struct {
         Cursor hidden;
     } _neko_XCursors;
 
+    typedef void(*PFN_glXSwapIntervalEXT)(Display*, GLXDrawable, int); 
+    typedef int(*PFN_glXSwapIntervalSGI)(int);
+    typedef int(*PFN_glXSwapIntervalMESA)(unsigned int);
 
     /// Structure for containing all API specific information 
     struct {
@@ -68,7 +77,11 @@ typedef struct {
         Window root;
         int32_t scr;
         _neko_XCursors cursors;
+        PFN_glXSwapIntervalEXT glXSwapIntervalEXT;
+        PFN_glXSwapIntervalSGI glXSwapIntervalSGI;
+        PFN_glXSwapIntervalMESA glXSwapIntervalMESA;
     } _neko_API = { 0 };
+
 #endif
 
 

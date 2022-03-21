@@ -203,8 +203,11 @@ void neko_UpdateWindow(neko_Window win) {
     }
 
     // Check if the window is used as in OpenGL context
-    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
+    if(wslots[win].hints & NEKO_HINT_API_OPENGL) {
+        // test
+        neko_SetVSync(win, false);
         glXSwapBuffers(_neko_API.display, wslots[win].x11.window);
+    }
 
     XFlush(_neko_API.display);
 }
@@ -301,6 +304,27 @@ void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *ext_s) {
 #endif
     strcpy((*p_exts)[0], NEKO_VK_WSI_EXT_NAME);
     strcpy((*p_exts)[1], NEKO_VK_XLIB_SURFACE_EXT_NAME);
+}
+
+
+void neko_SetVSync(neko_Window _win, bool _on) {
+    if(_on) {
+        if(_neko_API.glXSwapIntervalEXT)
+            _neko_API.glXSwapIntervalEXT(_neko_API.display, wslots[_win].x11.drawable, 1);
+        else if(_neko_API.glXSwapIntervalSGI)
+            _neko_API.glXSwapIntervalSGI(1);
+        else if(_neko_API.glXSwapIntervalMESA)
+            _neko_API.glXSwapIntervalMESA(1);
+    }
+
+    else {
+        if(_neko_API.glXSwapIntervalEXT)
+            _neko_API.glXSwapIntervalEXT(_neko_API.display, wslots[_win].x11.drawable, 0);
+        else if(_neko_API.glXSwapIntervalSGI)
+            _neko_API.glXSwapIntervalSGI(0);
+        else if(_neko_API.glXSwapIntervalMESA)
+            _neko_API.glXSwapIntervalMESA(0);
+    }
 }
 
 
@@ -468,6 +492,24 @@ static void _neko_UpdateWindowSize(neko_Window win) {
 static void _neko_CreateGLContext(neko_Window win) {
     wslots[win].x11.glc = glXCreateContext(_neko_API.display, wslots[win].x11.p_vi, NULL, GL_TRUE);
     glXMakeCurrent(_neko_API.display, wslots[win].x11.window, wslots[win].x11.glc);
+    wslots[win].x11.drawable = glXGetCurrentDrawable();
+
+    // verify that GLX_EXT_swap_control extension is present
+    const char *extensions = glXQueryExtensionsString(_neko_API.display, _neko_API.scr);
+
+    bool ext_found = false;
+    const char *ptr = extensions;
+    const char *pt = NULL;
+    while((pt = strchr(ptr, ' ')) && ptr != (const char*) 1) {
+        if(!strncmp(GLX_SWAP_CONTROL_EXT_NAME, ptr, strlen(GLX_SWAP_CONTROL_EXT_NAME)))
+            _neko_API.glXSwapIntervalEXT = (PFN_glXSwapIntervalEXT) glXGetProcAddress((const GLubyte*) GLX_SWAP_CONTROL_EXT_NAME);
+        else if(!strncmp(GLX_SWAP_CONTROL_SGI_NAME, ptr, strlen(GLX_SWAP_CONTROL_SGI_NAME)))
+            _neko_API.glXSwapIntervalSGI = (PFN_glXSwapIntervalSGI) glXGetProcAddress((const GLubyte*) GLX_SWAP_CONTROL_SGI_NAME);
+        else if(!strncmp(GLX_SWAP_CONTROL_MESA_NAME, ptr, strlen(GLX_SWAP_CONTROL_MESA_NAME)))
+            _neko_API.glXSwapIntervalMESA = (PFN_glXSwapIntervalMESA) glXGetProcAddress((const GLubyte*) GLX_SWAP_CONTROL_MESA_NAME);
+
+        ptr = pt + 1;
+    }
 }
 
 

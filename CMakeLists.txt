@@ -10,6 +10,7 @@ project(nwin LANGUAGES C CXX)
 set(CXX_STANDARD C++14)
 set(C_STANDARD C99)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(VULKAN_SDK_PATH CACHE STRING "")
 option(BUILD_GLAPP "Build a sample application using nekowin and OpenGL" ON)
