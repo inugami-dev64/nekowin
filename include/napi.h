@@ -81,7 +81,7 @@ LIBNWIN_API void neko_GetMousePos(neko_Window win, int64_t *x, int64_t *y);
 
 
 /// Find delta mouse movement between current and previous frames
-LIBNWIN_API void neko_FindDeltaMovement(neko_Window win, uint64_t *x, uint64_t *y);
+LIBNWIN_API void neko_FindDeltaMovement(neko_Window win, int64_t *x, int64_t *y);
 
 
 /// Limit the largest and smallest virtual cursor position that can be achieved using 

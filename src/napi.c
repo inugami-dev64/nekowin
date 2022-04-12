@@ -65,13 +65,17 @@ void neko_GetMousePos(neko_Window win, int64_t *x, int64_t *y) {
 }
 
 
-void neko_FindDeltaMovement(neko_Window win, uint64_t *x, uint64_t *y) {
+void neko_FindDeltaMovement(neko_Window win, int64_t *x, int64_t *y) {
     if(wslots[win].vc_data.is_enabled) {
-        *x = wslots[win].vc_data.x - __prev_x;
-        *y = wslots[win].vc_data.y - __prev_y;
+        *x = wslots[win].vc_data.x;
+        *y = wslots[win].vc_data.y;
+        wslots[win].vc_data.x = 0;
+        wslots[win].vc_data.y = 0;
     } else {
         *x = wslots[win].mx - __prev_x;
         *y = wslots[win].my - __prev_y;
+        __prev_x = wslots[win].mx;
+        __prev_y = wslots[win].my;
     }
 }
 
