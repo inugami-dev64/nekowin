@@ -67,6 +67,8 @@ uint32_t neko_GetActiveInput() { return active_mask; }
 /// Clean released key and mouse button array 
 void _neko_UnreleaseKeys() {
     memset(released_ev, 0x00, sizeof(released_ev));
+    active_ev[NEKO_MOUSE_SCROLL_DOWN] = false;
+    active_ev[NEKO_MOUSE_SCROLL_UP] = false;
 }
 
 
@@ -80,8 +82,11 @@ void _neko_RegisterKeyEvent(neko_HidEvent event, neko_InputEventType ev_type) {
             break;
 
         case NEKO_INPUT_EVENT_TYPE_RELEASED:
-            active_ev[event] = false;
-            released_ev[event] = true;
+            // ignore mouse scroll release events
+            if(event != NEKO_MOUSE_SCROLL_DOWN && event != NEKO_MOUSE_SCROLL_UP) {
+                active_ev[event] = false;
+                released_ev[event] = true;
+            }
             break;
 
         default:
