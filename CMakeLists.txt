@@ -13,9 +13,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(VULKAN_SDK_PATH CACHE STRING "")
-option(BUILD_GLAPP "Build a sample application using nekowin and OpenGL" ON)
-option(BUILD_STATIC_LIBNWIN "Build nekowin as a static library" ON)
-option(BUILD_SHARED_LIBNWIN "Build nekowin as a shared library" ON)
+option(NEKOWIN_BUILD_GLAPP "Build a sample application using nekowin and OpenGL" ON)
+option(NEKOWIN_BUILD_STATIC_LIB "Build nekowin as a static library" ON)
+option(NEKOWIN_BUILD_SHARED_LIB "Build nekowin as a shared library" ON)
 
 include(cmake/libnwin.cmake)
 
@@ -38,6 +38,6 @@ else()
     endif()
 endif()
 
-if(BUILD_GLAPP)
+if(NEKOWIN_BUILD_GLAPP)
     include(cmake/glapp.cmake)
 endif()

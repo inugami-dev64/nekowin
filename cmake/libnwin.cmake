@@ -40,7 +40,7 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 endif()
 
 # Build static library
-if(BUILD_STATIC_LIBNWIN)
+if(NEKOWIN_BUILD_STATIC_LIB)
     add_library(${LIBNWIN_STATIC_TARGET} STATIC
         ${LIBNWIN_HEADERS}
         ${LIBNWIN_SOURCES}
@@ -87,7 +87,7 @@ endif()
 
 
 # Build shared library
-if(BUILD_SHARED_LIBNWIN)
+if(NEKOWIN_BUILD_SHARED_LIB)
     add_library(${LIBNWIN_SHARED_TARGET} SHARED
         ${LIBNWIN_HEADERS}
         ${LIBNWIN_SOURCES}
