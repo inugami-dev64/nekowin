@@ -39,6 +39,11 @@ extern "C" {
 
 #include <vulkan/vulkan.h>
 #include "../include/nekodll.h"
+
+#ifdef _WIN32
+    #include <windows.h>
+#endif
+
 #include <glad/glad.h>
 #include "../include/key_translation.h"
 #include "../include/key_ev.h"
@@ -143,7 +148,7 @@ LIBNWIN_API void neko_UpdateMousePos(neko_Window win);
 
 
 /// Acquire all required Vulkan extension strings
-LIBNWIN_API void neko_FindRequiredVkExtensionsStrings(char ***p_exts, size_t *p_ext_s);
+LIBNWIN_API char **neko_FindRequiredVkExtensionStrings(uint32_t *p_ext_s);
 
 /// Set VSync on or off
 LIBNWIN_API void neko_SetVSync(neko_Window _win, bool _on);

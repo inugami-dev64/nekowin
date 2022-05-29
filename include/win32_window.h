@@ -7,10 +7,7 @@
 #define __WIN32_SURFACE_H
 
 #include <string.h>
-#include <windows.h>
 #include <windowsx.h>
-#include <wingdi.h>
-#include <synchapi.h>    
 #include <stdio.h>
 #include <vulkan/vulkan_win32.h>
 
@@ -100,11 +97,11 @@ typedef struct _neko_SurfaceWIN32 {
 
 	static HWND __handles[__MAX_WSLOT_C] = { 0 };
     static uint32_t __handle_c = 0;
-    static neko_Window __active_win;
+    static neko_Window __active_win = 0;
     static bool _full_screen_ev = false;
 #endif
 
-#define __NEKO_CLASS_NAME           L"NWIN"
+#define __NEKO_CLASS_NAME           "NWIN"
 #define __NEKO_WGL_PF_ATTRIB_C      40
 
 
@@ -113,7 +110,6 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(HWND hwnd, UINT msg, WPARAM pa
 static void _neko_HandleSizeHints(neko_Window win, DWORD *ws);
 static void _neko_CreateGLContext(neko_Window win);
 static int _neko_FindPixelFormat();
-static WCHAR *_neko_CreateWideStringFromUTF8(const char *title);
 static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_msg);
 static uint32_t _neko_FindWindowIndexFromHandle(HWND handle);
 #endif
