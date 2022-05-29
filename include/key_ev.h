@@ -51,7 +51,7 @@ extern "C" {
 
 
 /// Create new input bitmask from multiple input events
-LIBNWIN_API neko_InputBits neko_CreateInputMask(uint32_t ev_c, ...);
+LIBNWIN_API neko_InputBits neko_CreateInputMask(neko_HidEvent evs[8]);
 
 
 /// Unmask neko_InputBits instance and return a static array of neko_InputEv, which size is exactly 8.

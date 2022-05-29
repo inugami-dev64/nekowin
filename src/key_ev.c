@@ -8,21 +8,11 @@
 
 
 /// Create new input bitmask from multiple input events
-neko_InputBits neko_CreateInputMask(uint32_t ev_c, ...) {
+neko_InputBits neko_CreateInputMask(neko_HidEvent evs[8]) {
     neko_InputBits bits = 0;
-    va_list args;
-    va_start(args, ev_c);
-
-    if(ev_c > 8) {
-        fprintf(stderr, "neko_CreateInputMask(), %u: %s\n", __LINE__, "Cannot have more than 8 input events!");
-        exit(-1);
-    }
 
     for(uint32_t i = 0; i < 8; i++) {
-        if(i < ev_c)
-            bits |= va_arg(args, uint64_t);
-        else bits |= NEKO_HID_UNKNOWN;
-
+        bits |= evs[i];
         if(i != 7) bits = bits << 8;
     }
 
