@@ -2,6 +2,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <csignal>
 
 #include <vulkan/vulkan.h>
 #include <nwin.h>
@@ -47,14 +48,14 @@ static GLuint indices[] = {
 };
 
 
-void check_shader_compile_status(const uint32_t id) {
+void check_shader_compile_status(const uint32_t _id) {
     int success;
     char log[_LOG_SIZE] = { 0 };
     
-    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(_id, GL_COMPILE_STATUS, &success);
 
     if(!success) {
-        glGetShaderInfoLog(id, _LOG_SIZE, NULL, log);
+        glGetShaderInfoLog(_id, _LOG_SIZE, NULL, log);
         std::cout << "Shader compilation error\n";
         std::cout << std::string(log) << std::endl;
         exit(-1);
@@ -62,14 +63,14 @@ void check_shader_compile_status(const uint32_t id) {
 }
 
 
-void check_shader_link_status(const uint32_t id) {
+void check_shader_link_status(const uint32_t _id) {
     int success;
     char log[_LOG_SIZE] = { 0 };
     int32_t len = _LOG_SIZE;
     
-    glGetProgramiv(id, GL_LINK_STATUS, &success);
+    glGetProgramiv(_id, GL_LINK_STATUS, &success);
     if(!success) {
-        glGetProgramInfoLog(id, len, &len, log);
+        glGetProgramInfoLog(_id, len, &len, log);
         std::cout << "Shader linking failed" << std::endl;
         std::cout << std::string(log) << std::endl;
         exit(-1);
@@ -133,7 +134,7 @@ void create_buffer_handles() {
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*) 0 + 4 * sizeof(GLfloat));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*) (4 * sizeof(GLfloat)));
 }
 
 
@@ -174,27 +175,19 @@ void err_check(const std::string &func_name) {
 }
 
 
-void run(neko_Window win) {
+void run(neko_Window &_win) {
     bool allow_toggle = true;
-    neko_Hint hints;
-    int32_t x = 0, y = 0;
 
-    while(neko_IsRunning(win)) {
+    while(_win.is_running) {
         //neko_SetVSync(win, false);
-        neko_UpdateWindow(win);
+        neko_UpdateWindow(&_win);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         err_check("glClearColor");
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-
-        int32_t x_prev = x, y_prev = y;
-        neko_GetWindowSize(win, &x, &y);
-        if (x != x_prev || y != y_prev) {
-            glViewport(0, 0, x, y);
-            printf("Window size %dx%d\n", x, y);
-        }
-
         err_check("glClear");
+        glViewport(0, 0, _win.cwidth, _win.cheight);
+        err_check("glViewport");
+
         glUseProgram(sh_program);
         err_check("glUseProgram");
         glBindVertexArray(vao);
@@ -202,18 +195,13 @@ void run(neko_Window win) {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         err_check("glDrawElements");
 
-        neko_GetWindowHints(win, &hints);
-
-        int64_t x, y;
-        neko_GetMousePos(win, &x, &y);
-
         if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;
-            if(hints & NEKO_HINT_FULL_SCREEN) {
-                neko_UpdateSizeMode(win, NEKO_HINT_NO_FULL_SCREEN);
+            if(_win.hints & NEKO_HINT_FULL_SCREEN) {
+                neko_UpdateSizeMode(&_win, NEKO_HINT_NO_FULL_SCREEN);
             }
-            else if(hints & NEKO_HINT_NO_FULL_SCREEN) {
-                neko_UpdateSizeMode(win, NEKO_HINT_FULL_SCREEN);
+            else if(_win.hints & NEKO_HINT_NO_FULL_SCREEN) {
+                neko_UpdateSizeMode(&_win, NEKO_HINT_FULL_SCREEN);
             }
         }
 
@@ -222,22 +210,22 @@ void run(neko_Window win) {
 
         else if(neko_FindKeyStatus(NEKO_KEY_H, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;
-            neko_SetMouseCursorMode(win, NEKO_CURSOR_MODE_HIDDEN);
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_HIDDEN);
         }
 
         else if(neko_FindKeyStatus(NEKO_KEY_S, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;
-            neko_SetMouseCursorMode(win, NEKO_CURSOR_MODE_STANDARD);
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_STANDARD);
         }
 
         else if(neko_FindKeyStatus(NEKO_KEY_P, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;
-            neko_SetMouseCursorMode(win, NEKO_CURSOR_MODE_POINTER);
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_POINTER);
         }
 
         else if(neko_FindKeyStatus(NEKO_KEY_W, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
             allow_toggle = false;
-            neko_SetMouseCursorMode(win, NEKO_CURSOR_MODE_WAITING);
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_WAITING);
         }
 
 
@@ -255,13 +243,13 @@ void run(neko_Window win) {
 }
 
 
-void cleanup(neko_Window win) {
+void cleanup(neko_Window &_win) {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ibo);
     glDeleteProgram(sh_program);
 
-    neko_DestroyWindow(win);
+    neko_DestroyWindow(&_win);
     neko_DeinitAPI();
 }
 
@@ -276,7 +264,7 @@ int main() {
     
     // Create a new window
     neko_InitAPI();
-    neko_Window win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, "GLTest");
+    neko_Window parent_win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, nullptr, 0, 0, "GLTest");
 
     int status = neko_LoadGL();
     if(!status) {
@@ -284,12 +272,12 @@ int main() {
         std::exit(-1);
     }
 
-    neko_SetMouseCursorMode(win, NEKO_CURSOR_MODE_STANDARD);
-    const unsigned char *ver = glGetString(GL_VERSION);
+    neko_SetMouseCursorMode(&parent_win, NEKO_CURSOR_MODE_STANDARD);
     compile_shaders();
     create_buffer_handles();
-    run(win);
-    cleanup(win);
+    run(parent_win);
+    cleanup(parent_win);
+
 
     return 0;
 }

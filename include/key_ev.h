@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#if defined(__KEY_EV_C) || defined(__X11_WINDOW_C) || defined (__WIN32_WINDOW_C)
+#if defined(__KEY_EV_C)
     #include <nekodll.h>
     #include <stdio.h>
     #include <stdlib.h>
@@ -18,6 +18,7 @@ extern "C" {
     #include <stdint.h>
     #include <stdbool.h>
     #include <string.h>
+    #include <signal.h>
     #include <math.h>
 
     #include <vulkan/vulkan.h>
@@ -30,7 +31,6 @@ extern "C" {
     #endif
 
     #include <key_translation.h>
-    #include <nwin.h>
 
 
 #ifdef __KEY_EV_C
@@ -39,7 +39,10 @@ extern "C" {
     static bool active_ev[NEKO_INPUT_EV_COUNT] = { 0 };
     static bool released_ev[NEKO_INPUT_EV_COUNT] = { 0 };
 #endif
+#endif
 
+
+#if defined(__NWIN_C) || defined(__KEY_EV_C)
     /// Register new keyevent to key register
     /// This function is meant to be called only by DENG platform dependant surface instances
     void _neko_RegisterKeyEvent(neko_HidEvent event, neko_InputEventType ev_type);
@@ -48,7 +51,6 @@ extern "C" {
     /// Clean released key and mouse button array 
     void _neko_UnreleaseKeys();
 #endif
-
 
 /// Create new input bitmask from multiple input events
 LIBNWIN_API neko_InputBits neko_CreateInputMask(neko_HidEvent evs[8]);

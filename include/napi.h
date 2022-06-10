@@ -60,10 +60,6 @@ LIBNWIN_API bool neko_ResizeNotify(neko_Window win);
 LIBNWIN_API const char *neko_GetTitle(neko_Window win);
 
 
-/// Explicitly set mouse coordinates
-LIBNWIN_API void neko_SetMouseCoords(neko_Window win, uint64_t x, uint64_t y);
-
-
 /// Find the current window size
 LIBNWIN_API void neko_GetWindowSize(neko_Window win, int32_t *x, int32_t *y);
 

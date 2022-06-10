@@ -9,7 +9,6 @@ set(LIBNWIN_SHARED_TARGET nwin-shared)
 set(LIBNWIN_HEADERS
     include/key_ev.h
     include/key_translation.h
-    include/napi.h
     include/nekodll.h
     include/nwin.h
     include/third_party/glad/glad.h
@@ -20,7 +19,6 @@ set(LIBNWIN_SOURCES
     src/glad.c
     src/key_ev.c
     src/key_translation.c
-    src/napi.c
 )
 
 # Add platform specific sources
@@ -60,7 +58,7 @@ if(NEKOWIN_BUILD_STATIC_LIB)
     if(UNIX)
         target_link_libraries(${LIBNWIN_STATIC_TARGET}
             PUBLIC X11
-            PUBLIC XCursor
+            PUBLIC Xcursor
             PUBLIC GL
             PUBLIC dl
             PUBLIC vulkan
