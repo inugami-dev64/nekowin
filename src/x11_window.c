@@ -168,30 +168,6 @@ static void _neko_UpdateWindowSize(neko_Window *_win) {
 }
 
 
-static void _neko_CreateGLContext(neko_Window *_win) {
-    _win->x11.glc = glXCreateContext(_neko_API.display, _win->x11.p_vi, NULL, GL_TRUE);
-    glXMakeCurrent(_neko_API.display, _win->x11.window, _win->x11.glc);
-    _win->x11.drawable = glXGetCurrentDrawable();
-
-    // verify that GLX_EXT_swap_control extension is present
-    const char *extensions = glXQueryExtensionsString(_neko_API.display, _neko_API.scr);
-
-    bool ext_found = false;
-    const char *ptr = extensions;
-    const char *pt = NULL;
-    while((pt = strchr(ptr, ' ')) && ptr != (const char*) 1) {
-        if(!strncmp(GLX_SWAP_CONTROL_EXT_NAME, ptr, strlen(GLX_SWAP_CONTROL_EXT_NAME)))
-            _neko_API.glXSwapIntervalEXT = (PFN_glXSwapIntervalEXT) glXGetProcAddress((const GLubyte*) GLX_SWAP_CONTROL_EXT_NAME);
-        else if(!strncmp(GLX_SWAP_CONTROL_SGI_NAME, ptr, strlen(GLX_SWAP_CONTROL_SGI_NAME)))
-            _neko_API.glXSwapIntervalSGI = (PFN_glXSwapIntervalSGI) glXGetProcAddress((const GLubyte*) GLX_SWAP_CONTROL_SGI_NAME);
-        else if(!strncmp(GLX_SWAP_CONTROL_MESA_NAME, ptr, strlen(GLX_SWAP_CONTROL_MESA_NAME)))
-            _neko_API.glXSwapIntervalMESA = (PFN_glXSwapIntervalMESA) glXGetProcAddress((const GLubyte*) GLX_SWAP_CONTROL_MESA_NAME);
-
-        ptr = pt + 1;
-    }
-}
-
-
 /// Load all available platform specific nekowin cursors
 static void _neko_LoadCursors() {
     _neko_API.cursors.standard = XCreateFontCursor(_neko_API.display, XC_left_ptr);
@@ -231,6 +207,25 @@ void neko_InitAPI() {
     neko_assert(XkbSetDetectableAutoRepeat(_neko_API.display, True, &supported), 
                 "DetectableAutoRepeat is not supported");
 
+
+    // verify that GLX_EXT_swap_control extension is present
+    const char* extensions = glXQueryExtensionsString(_neko_API.display, _neko_API.scr);
+
+    // Check if any swap interval function pointers are present
+    bool ext_found = false;
+    const char* ptr = extensions;
+    const char* pt = NULL;
+    while ((pt = strchr(ptr, ' ')) && ptr != (const char*)1) {
+        if (!strncmp(GLX_SWAP_CONTROL_EXT_NAME, ptr, strlen(GLX_SWAP_CONTROL_EXT_NAME)))
+            _neko_API.glXSwapIntervalEXT = (PFN_glXSwapIntervalEXT)glXGetProcAddress((const GLubyte*)GLX_SWAP_CONTROL_EXT_NAME);
+        else if (!strncmp(GLX_SWAP_CONTROL_SGI_NAME, ptr, strlen(GLX_SWAP_CONTROL_SGI_NAME)))
+            _neko_API.glXSwapIntervalSGI = (PFN_glXSwapIntervalSGI)glXGetProcAddress((const GLubyte*)GLX_SWAP_CONTROL_SGI_NAME);
+        else if (!strncmp(GLX_SWAP_CONTROL_MESA_NAME, ptr, strlen(GLX_SWAP_CONTROL_MESA_NAME)))
+            _neko_API.glXSwapIntervalMESA = (PFN_glXSwapIntervalMESA)glXGetProcAddress((const GLubyte*)GLX_SWAP_CONTROL_MESA_NAME);
+
+        ptr = pt + 1;
+    }
+
     _neko_API.is_init = true;
 }
 
@@ -262,7 +257,6 @@ neko_Window neko_NewWindow (
     int32_t _width,
     int32_t _height,
     neko_Hint _hints,
-    neko_Window *_parent,
     int32_t _spawn_x,
     int32_t _spawn_y,
     const char *_title
@@ -273,6 +267,8 @@ neko_Window neko_NewWindow (
     // Fill the window structure
     win.owidth = (win.cwidth = _width);
     win.oheight = (win.cheight = _height);
+    win.oposx = (win.cposx = _spawn_x);
+    win.oposy = (win.cposy = _spawn_y);
     win.window_title = _title;
 
     win.hints = _hints;
@@ -291,42 +287,20 @@ neko_Window neko_NewWindow (
     // Create a new window
     if(win.x11.p_vi) {
         swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, win.x11.p_vi->visual, AllocNone);
-
-        // check if parent window pointer is present
-        if(_parent) {
-            win.x11.window = XCreateWindow(_neko_API.display, _parent->x11.window, 
-                                           _spawn_x, _spawn_y, win.cwidth, win.cheight,
-                                           0, win.x11.p_vi->depth, 
-                                           InputOutput, win.x11.p_vi->visual, 
-                                           VALUE_MASK, 
-                                           &swa);
-        } else {
-            win.x11.window = XCreateWindow(_neko_API.display, _neko_API.root,
-                                           _spawn_x, _spawn_y, win.cwidth, win.cheight,
-                                           0, win.x11.p_vi->depth,
-                                           InputOutput, win.x11.p_vi->visual,
-                                           VALUE_MASK,
-                                           &swa);
-        }
+        win.x11.window = XCreateWindow(_neko_API.display, _neko_API.root,
+                                       win.oposx, win.oposy, win.owidth, win.oheight,
+                                       0, win.x11.p_vi->depth,
+                                       InputOutput, win.x11.p_vi->visual,
+                                       VALUE_MASK,
+                                       &swa);
     } else {
         swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, win.x11.vi.visual, AllocNone);
-
-        // -"-
-        if(_parent) {
-            win.x11.window = XCreateWindow(_neko_API.display, _parent->x11.window, 
-                                           _spawn_x, _spawn_y, win.cwidth, win.cheight,
-                                           0, win.x11.vi.depth, 
-                                           InputOutput, win.x11.vi.visual, 
-                                           VALUE_MASK, 
-                                           &swa);
-        } else {
-            win.x11.window = XCreateWindow(_neko_API.display, _neko_API.root,
-                                           _spawn_x, _spawn_y, win.cwidth, win.cheight,
-                                           0, win.x11.vi.depth, 
-                                           InputOutput, win.x11.vi.visual,
-                                           VALUE_MASK,
-                                           &swa);
-        }
+        win.x11.window = XCreateWindow(_neko_API.display, _neko_API.root,
+                                       _spawn_x, _spawn_y, win.cwidth, win.cheight,
+                                       0, win.x11.vi.depth, 
+                                       InputOutput, win.x11.vi.visual,
+                                       VALUE_MASK,
+                                       &swa);
     }
 
     // Check if the window was created successfully
@@ -340,7 +314,7 @@ neko_Window neko_NewWindow (
     XSetWMProtocols(_neko_API.display, win.x11.window, &_neko_API.atoms.WM_DELETE_WINDOW, True);
 
     if(_hints & NEKO_HINT_API_OPENGL)
-        _neko_CreateGLContext(&win);
+        _win->x11.glc = glXCreateContext(_neko_API.display, _win->x11.p_vi, NULL, GL_TRUE);
 
     win.is_running = true;
     XFlush(_neko_API.display);
@@ -441,6 +415,12 @@ void neko_UpdateSizeMode(neko_Window *_win, neko_Hint _hints) {
     else _win->hints = _hints;
 
     _neko_UpdateWindowSize(_win);
+}
+
+
+void neko_glMakeCurrent(neko_Window* _win) {
+    glXMakeCurrent(_neko_API.display, _win->x11.window, _win->x11.glc);
+    _win->x11.drawable = glXGetCurrentDrawable();
 }
 
 

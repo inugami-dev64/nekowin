@@ -7,11 +7,155 @@
 #define __WIN32_WINDOW_C
 #include <nwin.h>
 
+/*****************************/
+/****** Inner functions ******/
+/*****************************/
+static LRESULT CALLBACK _neko_Win32MessageHandler(
+    HWND _handle,
+    UINT _msg,
+    WPARAM _wparam,
+    LPARAM _lparam
+) {
+    neko_assert(__p_win, "Invalid handle __p_win");
+    neko_HidEvent hid_ev = NEKO_HID_UNKNOWN;
+
+    switch (_msg) {
+        case WM_CREATE:
+            {
+                __p_win->win32.handle = _handle;
+                neko_Hint hints = __p_win->hints;
+                if ((hints & NEKO_HINT_API_OPENGL) == NEKO_HINT_API_OPENGL)
+                    _neko_CreateGLContext(__p_win);
+            }
+            break;
+
+        case WM_CLOSE:
+        case WM_DESTROY:
+            __p_win->is_running = false;
+            return 0;
+
+        case WM_SYSKEYDOWN:
+        case WM_KEYDOWN:
+            hid_ev = translateWIN32Key((uint16_t) _wparam);
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+            break;
+
+        case WM_SYSKEYUP:
+        case WM_KEYUP:
+        case WM_IME_KEYUP:
+            hid_ev = translateWIN32Key((uint16_t) _wparam);
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
+            break;
+
+        case WM_LBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+            hid_ev = translateWIN32Btn(_msg);
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+            break;
+
+        case WM_LBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_RBUTTONUP:
+            hid_ev = translateWIN32Btn(_msg);
+            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
+            break;
+
+        case WM_MOUSEWHEEL: {
+            LONG delta = GET_WHEEL_DELTA_WPARAM(_wparam);
+            if (delta > 0) _neko_RegisterKeyEvent(NEKO_MOUSE_SCROLL_UP, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+            else _neko_RegisterKeyEvent(NEKO_MOUSE_SCROLL_DOWN, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+            break;
+        }
+
+        case WM_MOUSEMOVE: 
+            {
+                POINT pt;
+                pt.x = GET_X_LPARAM(_lparam);
+                pt.y = GET_Y_LPARAM(_lparam);
+                neko_Window* old = __p_win;
+                neko_UpdateMousePos(__p_win);
+                __p_win = old;
+            }
+            break;
+
+        case WM_SIZE:
+        case WM_MOVE:
+            {
+                if (!(__p_win->hints & NEKO_HINT_FULL_SCREEN)) {
+                    RECT win_rect = { 0 };
+                    GetClientRect(_handle, &win_rect);
+                    __p_win->cwidth = (int32_t)(win_rect.right - win_rect.left);
+                    __p_win->cheight = (int32_t)(win_rect.bottom - win_rect.top);
+                    GetWindowRect(_handle, &win_rect);
+                    __p_win->cposx = (int32_t)win_rect.left;
+                    __p_win->cposy = (int32_t)win_rect.top;
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    return DefWindowProc(_handle, _msg, _wparam, _lparam);
+}
+
+
+static DWORD _neko_HandleSizeHints(neko_Window *_win) {
+    DWORD hints = 0;
+
+    // Check if no window size hints were given and if so give fixed size hint
+    if (!(_win->hints & NEKO_HINT_FIXED_SIZE) && !(_win->hints & NEKO_HINT_RESIZEABLE) && !(_win->hints & NEKO_HINT_FULL_SCREEN)) {
+        _win->hints |= NEKO_HINT_FIXED_SIZE;
+    }
+
+    if (_win->hints & NEKO_HINT_FIXED_SIZE) {
+        hints = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
+    } else if (_win->hints & NEKO_HINT_RESIZEABLE) {
+        hints = WS_OVERLAPPEDWINDOW;
+    } else if (_win->hints & NEKO_HINT_FULL_SCREEN) {
+        hints = WS_POPUP | WS_VISIBLE;
+    }
+
+    return hints;
+}
+
+
+static void _neko_CreateGLContext(neko_Window *_win) {
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
+    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 32;
+    pfd.cDepthBits = 24;
+    pfd.cStencilBits = 8;
+    pfd.iLayerType = PFD_MAIN_PLANE;
+
+    HDC handle_to_device_context = GetDC(_win->win32.handle);
+    int px_format = ChoosePixelFormat(handle_to_device_context, &pfd);
+    SetPixelFormat(handle_to_device_context, px_format, &pfd);
+
+    _neko_ZeroValueErrorHandler(pcast(ULONG, _win->win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context)),
+        (ULONG)__LINE__,
+        "Failed to create WGL context using wglCreateContext functi on");    
+}
+
+
+static void _neko_ZeroValueErrorHandler(ULONG _val, ULONG _line, const char* _err_msg) {
+    if (!_val) {
+        DWORD code = GetLastError();
+        fprintf(stderr, "Error code: 0x%08lx\n", code);
+        fprintf(stderr, "%s:%u; %s\n", __FILE__, _line, _err_msg);
+        exit(-1);
+    }
+}
+
 
 /*******************************/
 /******* NEKO API CALLS ********/
 /*******************************/
-
 void neko_InitAPI() {
     // TODO: Load wgl function pointers
     _neko_API.instance = LoadLibraryA("opengl32.dll");
@@ -48,28 +192,36 @@ void neko_DeinitAPI() {
 /// Create new platform independant neko_Window instance for vulkan
 neko_Window neko_NewWindow (
     int32_t width,
-    int32_t height, 
+    int32_t height,
     neko_Hint hints,
-    const char *title
+    int32_t _spawn_x,
+    int32_t _spawn_y,
+    const char *_title
 ) {
-    neko_assert(wslot_reserved + 1 >= __MAX_WSLOT_C, "There are no free window slots available");
-    neko_Window win = (wslot_reserved++);
-    __active_win = win;
+    neko_Window win = { 0 };
 
-    wslots[win].owidth = width;
-    wslots[win].oheight = height;
-    wslots[win].hints = hints;
-    wslots[win].window_title = title;
-    wslots[win].vc_data.is_enabled = false;
-    wslots[win].vc_data.orig_x = width / 2;
-    wslots[win].vc_data.orig_y = height / 2;
+    win.cwidth = (win.owidth = width);
+    win.cheight = (win.oheight = height);
+    win.cposx = (win.oposx = _spawn_x);
+    win.cposy = (win.oposy = _spawn_y);
+    win.hints = hints;
+    win.window_title = _title;
+    win.vc_data.is_enabled = false;
+    win.vc_data.orig_x = width / 2;
+    win.vc_data.orig_y = height / 2;
 
-    DWORD window_style;
+    // Make a class name
+    char class_name[1024] = { 0 };
+    strcat(class_name, __NEKO_CLASS_NAME);
+    strcat(class_name, "__");
+    strcat(class_name, _title);
+
     WNDCLASSA class = { 0 };
     class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     class.lpfnWndProc = _neko_Win32MessageHandler;
-    class.hInstance = wslots[win].win32.instance = GetModuleHandleA(NULL);
-    class.lpszClassName = __NEKO_CLASS_NAME;
+    class.hInstance = (win.win32.instance = GetModuleHandleA(NULL));
+    class.lpszClassName = class_name;
+    class.hCursor = _neko_API.cursors.standard;
 
     _neko_ZeroValueErrorHandler((ULONG) RegisterClassA(&class), 
                                 (ULONG) __LINE__, 
@@ -77,225 +229,257 @@ neko_Window neko_NewWindow (
 
 
     // Check size hints and resize accordingly
-    _neko_HandleSizeHints(win, &window_style);
-    wslots[win].owidth = wslots[win].cwidth;
-    wslots[win].oheight = wslots[win].cheight;
+    DWORD window_style = _neko_HandleSizeHints(&win);
+    __p_win = &win;
 
-    wslots[win].win32.handle = CreateWindowExA(0, __NEKO_CLASS_NAME, wslots[win].window_title,
-                                               window_style,
-                                               0, 
-                                               0, 
-                                               wslots[win].owidth, wslots[win].oheight, 
-                                               NULL, NULL, 
-                                               wslots[win].win32.instance, NULL);
+    // Check if the parent window pointer is present
+    win.win32.handle = CreateWindowExA(0, class_name, win.window_title,
+                                       window_style, 
+                                       win.oposx, win.oposy,
+                                       win.owidth, win.oheight,
+                                       NULL, NULL,
+                                       win.win32.instance, NULL);
 
-    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.handle), (ULONG)__LINE__, "Failed to create win32 window");
+    _neko_ZeroValueErrorHandler(pcast(ULONG, win.win32.handle), (ULONG)__LINE__, "Failed to create win32 window");
+    
     // NOTE: Whenever using WIN32 api, you must keep in mind that the created window size is absolute and contains all window decorations as well.
     //       In order to find the actual client are we must call GetClientRect() function
     RECT rect;
-    GetClientRect(wslots[win].win32.handle, &rect);
-    wslots[win].cwidth = (int32_t) (rect.right - rect.left);
-    wslots[win].cheight = (int32_t) (rect.bottom - rect.top);
+    GetClientRect(win.win32.handle, &rect);
+    win.cwidth = (int32_t) (rect.right - rect.left);
+    win.cheight = (int32_t) (rect.bottom - rect.top);
 
-
-    __handles[win] = wslots[win].win32.handle;
-    __handle_c++;
-                                    
     // Free all memory allocated for the wide title
-    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.handle), (ULONG) __LINE__, "Failed get win32 window client rect");
+    _neko_ZeroValueErrorHandler(pcast(ULONG, win.win32.handle), (ULONG) __LINE__, "Failed get win32 window client rect");
 
-    wslots[win].win32.rids[0].usUsagePage = 0x01;
-    wslots[win].win32.rids[0].usUsage = 0x02;
-    wslots[win].win32.rids[0].dwFlags = 0;
-    wslots[win].win32.rids[0].hwndTarget = wslots[win].win32.handle;
+    win.win32.rids[0].usUsagePage = 0x01;
+    win.win32.rids[0].usUsage = 0x02;
+    win.win32.rids[0].dwFlags = 0;
+    win.win32.rids[0].hwndTarget = win.win32.handle;
 
-    wslots[win].win32.rids[1].usUsagePage = 0x01;
-    wslots[win].win32.rids[1].usUsage = 0x06;
-    wslots[win].win32.rids[1].dwFlags = 0;
-    wslots[win].win32.rids[1].hwndTarget = wslots[win].win32.handle;
+    win.win32.rids[1].usUsagePage = 0x01;
+    win.win32.rids[1].usUsage = 0x06;
+    win.win32.rids[1].dwFlags = 0;
+    win.win32.rids[1].hwndTarget = win.win32.handle;
 
-    BOOL rid_stat = RegisterRawInputDevices(wslots[win].win32.rids, 2, sizeof(wslots[win].win32.rids[0]));
+    BOOL rid_stat = RegisterRawInputDevices(win.win32.rids, 2, sizeof(win.win32.rids[0]));
     _neko_ZeroValueErrorHandler((ULONG) rid_stat, (ULONG) __LINE__, "Failed to register raw input devices");
 
-    wslots[win].mx = 0;
-    wslots[win].my = 0;
+    win.mx = 0;
+    win.my = 0;
 
-    wslots[win].vc_data.orig_x = (int64_t)(wslots[win].cwidth / 2);
-    wslots[win].vc_data.orig_y = (int64_t)(wslots[win].cheight / 2);
+    win.vc_data.orig_x = (int64_t)(win.cwidth / 2);
+    win.vc_data.orig_y = (int64_t)(win.cheight / 2);
 
-    wslots[win].is_running = true;
-    ShowWindow(wslots[win].win32.handle, SW_NORMAL);
+    win.is_running = true;
+    ShowWindow(win.win32.handle, SW_NORMAL);
+    __p_win = NULL;
     return win;
 }
 
 
-VkResult neko_InitVKSurface(neko_Window win, VkInstance i, VkSurfaceKHR *s) {
+VkResult neko_InitVkSurface(neko_Window *_win, VkInstance _ins, VkSurfaceKHR *_surface) {
+    __p_win = _win;
     VkWin32SurfaceCreateInfoKHR surface_info;
     memset(&surface_info, 0, sizeof(surface_info));
     surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    surface_info.hinstance = wslots[win].win32.instance;
-    surface_info.hwnd = wslots[win].win32.handle;
+    surface_info.hinstance = _win->win32.instance;
+    surface_info.hwnd = _win->win32.handle;
     surface_info.pNext = NULL;
     
     PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
-    vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR) vkGetInstanceProcAddr(i, "vkCreateWin32SurfaceKHR");
+    vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR) vkGetInstanceProcAddr(_ins, "vkCreateWin32SurfaceKHR");
 
-    return vkCreateWin32SurfaceKHR(i, &surface_info, NULL, s);
+    VkResult res = vkCreateWin32SurfaceKHR(_ins, &surface_info, NULL, _surface);
+    __p_win = NULL;
+    return res;
 }
 
 
 /// Update window events and key arrays
 /// This function is meant to be called with every loop iteration 
-void neko_UpdateWindow(neko_Window win) {
+void neko_UpdateWindow(neko_Window *_win) {
+    __p_win = _win;
+
     // Find the scroll event status
     _neko_UnreleaseKeys();
     _neko_RegisterKeyEvent(NEKO_MOUSE_SCROLL_UP, NEKO_INPUT_EVENT_TYPE_RELEASED);
     _neko_RegisterKeyEvent(NEKO_MOUSE_SCROLL_DOWN, NEKO_INPUT_EVENT_TYPE_RELEASED);
 
-    if(wslots[win].hints & NEKO_HINT_API_OPENGL) {
-        HDC dc = GetDC(wslots[win].win32.handle);
+    if(_win->hints & NEKO_HINT_API_OPENGL) {
+        HDC dc = GetDC(_win->win32.handle);
         SwapBuffers(dc);
     }
 
-    if (!wslots[win].is_running) return;
-    
-    while(PeekMessageW(&wslots[win].win32.message, wslots[win].win32.handle, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&wslots[win].win32.message);
-        DispatchMessage(&wslots[win].win32.message);
+    if (!_win->is_running) {
+        __p_win = NULL;
+        return;
     }
+    
+    while(PeekMessageW(&_win->win32.message, _win->win32.handle, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&_win->win32.message);
+        DispatchMessage(&_win->win32.message);
+    }
+
+    __p_win = NULL;
 }
 
 
 /// Set new resettable hints for neko window
-void neko_UpdateSizeMode(neko_Window win, neko_Hint hints) {
-    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
-        wslots[win].hints = hints | NEKO_HINT_API_OPENGL;
-    else if(wslots[win].hints & NEKO_HINT_API_VULKAN)
-        wslots[win].hints = hints | NEKO_HINT_API_VULKAN;
+void neko_UpdateSizeMode(neko_Window *_win, neko_Hint _hints) {
+    __p_win = _win;
+    if(_win->hints & NEKO_HINT_API_OPENGL)
+        _win->hints = _hints | NEKO_HINT_API_OPENGL;
+    else if(_win->hints & NEKO_HINT_API_VULKAN)
+        _win->hints = _hints | NEKO_HINT_API_VULKAN;
 
-    DWORD ws;
-    _neko_HandleSizeHints(win, &ws);
+    DWORD ws = _neko_HandleSizeHints(_win);
 
-    if(wslots[win].hints & NEKO_HINT_FULL_SCREEN)
-        MoveWindow(wslots[win].win32.handle, 0, 0, wslots[win].cwidth, wslots[win].cheight, TRUE);
-    else {
-        MoveWindow(wslots[win].win32.handle, wslots[win].cposx, wslots[win].cposy, wslots[win].cwidth, wslots[win].cheight, TRUE);
+    if (_win->hints & NEKO_HINT_FULL_SCREEN) {
+        RECT rect;
+        GetWindowRect(_win->win32.handle, &rect);
+        _win->owidth = rect.right - rect.left;
+        _win->oheight = rect.bottom - rect.top;
+        _win->oposx = _win->cposx;
+        _win->oposy = _win->cposy;
+        
+        _win->cwidth = GetSystemMetrics(SM_CXSCREEN);
+        _win->cheight = GetSystemMetrics(SM_CYSCREEN);
+        _win->cposx = 0;
+        _win->cposy = 0;
+    } else {
+        _win->cwidth = _win->owidth;
+        _win->cheight = _win->oheight;
+        _win->cposx = _win->oposx;
+        _win->cposy = _win->oposy;
     }
-    SetWindowLongPtr(wslots[win].win32.handle, GWL_STYLE, ws);
-    ShowWindow(wslots[win].win32.handle, SW_NORMAL);
+
+    MoveWindow(_win->win32.handle, _win->cposx, _win->cposy, _win->cwidth, _win->cheight, TRUE);
+    SetWindowLongPtr(_win->win32.handle, GWL_STYLE, ws);
+    ShowWindow(_win->win32.handle, SW_NORMAL);
+    __p_win = NULL;
+}
+
+
+void neko_glMakeCurrent(neko_Window* _win) {
+    HDC handle_to_device_context = GetDC(_win->win32.handle);
+    _neko_API.wgl.MakeCurrent(handle_to_device_context, _win->win32.gl_context);
 }
 
 
 /// Destroy window instance and free all resources that were used
-void neko_DestroyWindow(neko_Window win) {
-    if(wslots[win].hints & NEKO_HINT_API_OPENGL)
-        _neko_API.wgl.DeleteContext(wslots[win].win32.gl_context);
-    DestroyWindow(wslots[win].win32.handle);
-}
-
-
-/// Check if window is still running and no close events have happened
-bool neko_IsRunning(neko_Window win) {
-    return wslots[win].is_running;
+void neko_DestroyWindow(neko_Window *_win) {
+    __p_win = _win;
+    if(_win->hints & NEKO_HINT_API_OPENGL)
+        _neko_API.wgl.DeleteContext(_win->win32.gl_context);
+    DestroyWindow(_win->win32.handle);
+    __p_win = NULL;
 }
 
 
 /// Switch mouse cursor behaviour within the DENG window 
 void neko_SetMouseCursorMode (
-    neko_Window win, 
-    neko_CursorMode cur_mode
+    neko_Window *_win, 
+    neko_CursorMode _cur_mode
 ) {
-    wslots[win].cursor_mode = cur_mode;
+    __p_win = _win;
+    _win->cursor_mode = _cur_mode;
 
     // Check if the cursor should be hidden
-    if(cur_mode == NEKO_CURSOR_MODE_HIDDEN)
+    if(_cur_mode == NEKO_CURSOR_MODE_HIDDEN)
         ShowCursor(FALSE);
     else ShowCursor(TRUE);
 
-    switch(cur_mode) {
-    case NEKO_CURSOR_MODE_STANDARD:
-        SetCursor(_neko_API.cursors.standard);
-        break;
+    switch(_cur_mode) {
+        case NEKO_CURSOR_MODE_STANDARD:
+            SetCursor(_neko_API.cursors.standard);
+            break;
 
-    case NEKO_CURSOR_MODE_POINTER:
-        SetCursor(_neko_API.cursors.pointer);
-        break;
+        case NEKO_CURSOR_MODE_POINTER:
+            SetCursor(_neko_API.cursors.pointer);
+            break;
 
-    case NEKO_CURSOR_MODE_WAITING:
-        SetCursor(_neko_API.cursors.waiting);
-        break;
+        case NEKO_CURSOR_MODE_WAITING:
+            SetCursor(_neko_API.cursors.waiting);
+            break;
 
-    case NEKO_CURSOR_MODE_HIDDEN:
-        SetCursor(_neko_API.cursors.hidden);
-        break;
+        case NEKO_CURSOR_MODE_HIDDEN:
+            SetCursor(_neko_API.cursors.hidden);
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
+    __p_win = NULL;
 }
 
 
 /// Force mouse cursor to certain location on window
 void neko_SetMouseCoords (
-    neko_Window win, 
-    uint64_t x, 
-    uint64_t y
+    neko_Window *_win, 
+    uint64_t _x, 
+    uint64_t _y
 ) {
+    __p_win = _win;
     POINT pnt;
-    pnt.x = (LONG) x;
-    pnt.y = (LONG) y;
-    ClientToScreen(wslots[win].win32.handle, &pnt);
+    pnt.x = (LONG) _x;
+    pnt.y = (LONG) _y;
+    ClientToScreen(_win->win32.handle, &pnt);
     SetCursorPos((int) pnt.x, (int) pnt.y);
+    __p_win = _win;
 }
 
 
-void neko_UpdateMousePos(neko_Window win) {
+void neko_UpdateMousePos(neko_Window *_win) {
+    __p_win = _win;
     // Query mouse position
     POINT pos;
     GetCursorPos(&pos);
-    ScreenToClient(wslots[win].win32.handle, &pos);
+    ScreenToClient(_win->win32.handle, &pos);
 
     // Check if virtual mouse positioning is enabled
-    if(wslots[win].vc_data.is_enabled) {
-        int64_t movement_x = ((int64_t) pos.x - wslots[win].vc_data.orig_x);
-        int64_t movement_y = ((int64_t) pos.y - wslots[win].vc_data.orig_y);
+    if(_win->vc_data.is_enabled) {
+        int64_t movement_x = ((int64_t) pos.x - _win->vc_data.orig_x);
+        int64_t movement_y = ((int64_t) pos.y - _win->vc_data.orig_y);
 
         // Check if cursor should be set to the origin position
-        if(pos.x != (LONG) wslots[win].vc_data.orig_x || pos.y != (LONG) wslots[win].vc_data.orig_y)
-            neko_SetMouseCoords(win, wslots[win].vc_data.orig_x, wslots[win].vc_data.orig_y);
+        if(pos.x != (LONG) _win->vc_data.orig_x || pos.y != (LONG) _win->vc_data.orig_y)
+            neko_SetMouseCoords(_win, _win->vc_data.orig_x, _win->vc_data.orig_y);
 
         // Check if overflow is detected on x position
-        if (wslots[win].vc_data.x + movement_x >= __max_vc_x) {
+        if (_win->vc_data.x + movement_x >= __max_vc_x) {
             if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.x = __min_vc_x;
+                _win->vc_data.x = __min_vc_x;
         }
 
-        else if (wslots[win].vc_data.x + movement_x < __min_vc_x) {
+        else if (_win->vc_data.x + movement_x < __min_vc_x) {
             if (__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.x = __max_vc_x;
+                _win->vc_data.x = __max_vc_x;
         }
 
-        else wslots[win].vc_data.x += movement_x;
+        else _win->vc_data.x += movement_x;
 
         // Check if overflow is detected on y position
-        if (wslots[win].vc_data.y + movement_y >= __max_vc_y) {
+        if (_win->vc_data.y + movement_y >= __max_vc_y) {
             if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.y = __min_vc_y;
+                _win->vc_data.y = __min_vc_y;
         }
 
-        else if (wslots[win].vc_data.y + movement_y < __min_vc_y) {
+        else if (_win->vc_data.y + movement_y < __min_vc_y) {
             if (__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                wslots[win].vc_data.y = __max_vc_y;
+                _win->vc_data.y = __max_vc_y;
         }
 
-        else wslots[win].vc_data.y += movement_y;
+        else _win->vc_data.y += movement_y;
     }
 
     // Check if virtual mouse position initialisation is neccesary
     else {
-        wslots[win].mx = (int64_t) pos.x;
-        wslots[win].my = (int64_t) pos.y;
+        _win->mx = (int64_t) pos.x;
+        _win->my = (int64_t) pos.y;
     }
+
+    __p_win = NULL;
 }
 
 
@@ -313,184 +497,4 @@ char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
     strcpy(exts[1], NEKO_VK_WIN32_SURFACE_EXT_NAME);
     
     return exts;
-}
-
-
-/*****************************/
-/****** Inner functions ******/
-/*****************************/
-
-
-/// WIN32 messenger callback
-static LRESULT CALLBACK _neko_Win32MessageHandler (
-    HWND handle, 
-    UINT msg, 
-    WPARAM wparam, 
-    LPARAM lparam
-) {
-    neko_HidEvent hid_ev = NEKO_HID_UNKNOWN;
-    neko_Window wid;
-
-    switch(msg) {
-        case WM_CREATE:
-            {
-                wid = __active_win;
-                wslots[wid].win32.handle = handle;
-                neko_Hint hints = wslots[wid].hints;
-                _neko_ZeroValueErrorHandler(wid != UINT32_MAX, __LINE__, "Invalid handle");
-                if ((hints & NEKO_HINT_API_OPENGL) == NEKO_HINT_API_OPENGL)
-                    _neko_CreateGLContext(wid);
-                }
-            break;
-
-        case WM_CLOSE:
-        case WM_DESTROY:
-            wid = _neko_FindWindowIndexFromHandle(handle);
-            if (wid != UINT32_MAX)
-                wslots[wid].is_running = false;
-            return 0;
-
-        case WM_SYSKEYDOWN: 
-        case WM_KEYDOWN:
-            hid_ev = translateWIN32Key((uint16_t) wparam);
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
-            break;
-
-        case WM_SYSKEYUP: 
-        case WM_KEYUP: 
-        case WM_IME_KEYUP: 
-            hid_ev = translateWIN32Key((uint16_t) wparam);
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
-            break;
-
-        case WM_LBUTTONDOWN: 
-        case WM_MBUTTONDOWN:
-        case WM_RBUTTONDOWN:
-            hid_ev = translateWIN32Btn(msg);
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
-            break;
-
-        case WM_LBUTTONUP: 
-        case WM_MBUTTONUP: 
-        case WM_RBUTTONUP: 
-            hid_ev = translateWIN32Btn(msg); 
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
-            break;
-        
-        case WM_MOUSEWHEEL: {
-            LONG delta = GET_WHEEL_DELTA_WPARAM(wparam);
-            if (delta > 0) _neko_RegisterKeyEvent(NEKO_MOUSE_SCROLL_UP, NEKO_INPUT_EVENT_TYPE_ACTIVE);
-            else _neko_RegisterKeyEvent(NEKO_MOUSE_SCROLL_DOWN, NEKO_INPUT_EVENT_TYPE_ACTIVE);
-            break;
-        }
-
-        case WM_MOUSEMOVE: {
-            wid = _neko_FindWindowIndexFromHandle(handle);
-            POINT pt;
-            pt.x = GET_X_LPARAM(lparam);
-            pt.y = GET_Y_LPARAM(lparam);
-            neko_UpdateMousePos(wid);
-            break;
-        }
-
-        case WM_SIZE:
-        case WM_MOVE:
-            {
-                if (!_full_screen_ev) {
-                    RECT win_rect = { 0 };
-                    GetClientRect(handle, &win_rect);
-                    wid = _neko_FindWindowIndexFromHandle(handle);
-                    if (wid != UINT32_MAX) {
-                        wslots[wid].oposx = wslots[wid].cposx;
-                        wslots[wid].oposy = wslots[wid].cposy;
-                        wslots[wid].cwidth = (int32_t)(win_rect.right - win_rect.left);
-                        wslots[wid].cheight = (int32_t)(win_rect.bottom - win_rect.top);
-                        wslots[wid].cposx = (int32_t)win_rect.left;
-                        wslots[wid].cposy = (int32_t)win_rect.top;
-                    }
-                }
-            }
-            break;
-
-        default:
-            break;
-    }
-
-    return DefWindowProc(handle, msg, wparam, lparam);
-}
-
-
-static void _neko_HandleSizeHints(neko_Window win, DWORD *ws) {
-    HDC hdc = GetDC(wslots[win].win32.handle);
-
-    // Check if no window size hints were given and if so give fixed size hint
-    if (!(wslots[win].hints & NEKO_HINT_FIXED_SIZE) && !(wslots[win].hints & NEKO_HINT_RESIZEABLE) && !(wslots[win].hints & NEKO_HINT_FULL_SCREEN)) {
-        wslots[win].hints |= NEKO_HINT_FIXED_SIZE;
-        _full_screen_ev = false;
-    }
-
-    if(wslots[win].hints & NEKO_HINT_FIXED_SIZE) {
-        _full_screen_ev = false;
-        *ws = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
-        wslots[win].cwidth = wslots[win].owidth;
-        wslots[win].cheight = wslots[win].cheight;
-    }
-    else if(wslots[win].hints & NEKO_HINT_RESIZEABLE) {
-        _full_screen_ev = false;
-        *ws = WS_OVERLAPPEDWINDOW;
-        wslots[win].cwidth = wslots[win].owidth;
-        wslots[win].cheight = wslots[win].oheight;
-        _neko_API.wgl.MakeCurrent(hdc, wslots[win].win32.gl_context);
-    }
-    if(wslots[win].hints & NEKO_HINT_FULL_SCREEN) {
-        _full_screen_ev = true;
-        wslots[win].cwidth = GetSystemMetrics(SM_CXSCREEN);
-        wslots[win].cheight = GetSystemMetrics(SM_CYSCREEN);
-        *ws = WS_POPUP | WS_VISIBLE;
-    }
-}
-
-
-static void _neko_CreateGLContext(neko_Window win) {
-    PIXELFORMATDESCRIPTOR pfd = { 0 };
-    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    pfd.nVersion = 1;
-    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    pfd.iPixelType = PFD_TYPE_RGBA;
-    pfd.cColorBits = 32;
-    pfd.cDepthBits = 24;
-    pfd.cStencilBits = 8;
-    pfd.iLayerType = PFD_MAIN_PLANE;
-
-    HDC handle_to_device_context = GetDC(wslots[win].win32.handle);
-    int px_format = ChoosePixelFormat(handle_to_device_context, &pfd);
-    SetPixelFormat(handle_to_device_context, px_format, &pfd);
-
-    _neko_ZeroValueErrorHandler(pcast(ULONG, wslots[win].win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context)),
-                                (ULONG) __LINE__,
-                                "Failed to create WGL context using wglCreateContext functi on");
-    _neko_API.wgl.MakeCurrent(handle_to_device_context, wslots[win].win32.gl_context);
-}
-
-
-
-static void _neko_ZeroValueErrorHandler(ULONG val, ULONG line, const char *err_msg) {
-    if(!val) {
-        DWORD code = GetLastError();
-        fprintf(stderr, "Error code: 0x%08lx\n", code);
-        fprintf(stderr, "%s:%u; %s\n", __FILE__, line, err_msg);
-        exit(-1);
-    }
-}
-
-
-static uint32_t _neko_FindWindowIndexFromHandle(HWND handle) {
-    if (handle) {
-        for (uint32_t i = 0; i < __handle_c; i++) {
-            if (__handles[i] == handle)
-                return i;
-        }
-    }
-
-    return UINT32_MAX;
 }

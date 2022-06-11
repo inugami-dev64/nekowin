@@ -175,81 +175,88 @@ void err_check(const std::string &func_name) {
 }
 
 
-void run(neko_Window &_win) {
+int draw(neko_Window &_win, bool &_allow_toggle) {
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    err_check("glClearColor");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    err_check("glClear");
+    glViewport(0, 0, _win.cwidth, _win.cheight);
+    err_check("glViewport");
+
+    glUseProgram(sh_program);
+    err_check("glUseProgram");
+    glBindVertexArray(vao);
+    err_check("glBindVertexArray");
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    err_check("glDrawElements");
+
+    if (neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
+        _allow_toggle = false;
+        if (_win.hints & NEKO_HINT_FULL_SCREEN) {
+            neko_UpdateSizeMode(&_win, NEKO_HINT_NO_FULL_SCREEN);
+        }
+        else if (_win.hints & NEKO_HINT_NO_FULL_SCREEN) {
+            neko_UpdateSizeMode(&_win, NEKO_HINT_FULL_SCREEN);
+        }
+    }
+
+    else if (neko_FindKeyStatus(NEKO_KEY_Q, NEKO_INPUT_EVENT_TYPE_ACTIVE))
+        return 0;
+
+    else if (neko_FindKeyStatus(NEKO_KEY_H, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
+        _allow_toggle = false;
+        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_HIDDEN);
+    }
+
+    else if (neko_FindKeyStatus(NEKO_KEY_S, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
+        _allow_toggle = false;
+        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_STANDARD);
+    }
+
+    else if (neko_FindKeyStatus(NEKO_KEY_P, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
+        _allow_toggle = false;
+        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_POINTER);
+    }
+
+    else if (neko_FindKeyStatus(NEKO_KEY_W, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
+        _allow_toggle = false;
+        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_WAITING);
+    }
+
+
+    if (neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
+        neko_FindKeyStatus(NEKO_KEY_H, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
+        neko_FindKeyStatus(NEKO_KEY_S, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
+        neko_FindKeyStatus(NEKO_KEY_P, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
+        neko_FindKeyStatus(NEKO_KEY_W, NEKO_INPUT_EVENT_TYPE_RELEASED)) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        _allow_toggle = true;
+    }
+
+    return 1;
+}
+
+
+void run(neko_Window &parent) {
     bool allow_toggle = true;
 
-    while(_win.is_running) {
-        //neko_SetVSync(win, false);
-        neko_UpdateWindow(&_win);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        err_check("glClearColor");
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        err_check("glClear");
-        glViewport(0, 0, _win.cwidth, _win.cheight);
-        err_check("glViewport");
-
-        glUseProgram(sh_program);
-        err_check("glUseProgram");
-        glBindVertexArray(vao);
-        err_check("glBindVertexArray");
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        err_check("glDrawElements");
-
-        if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
-            allow_toggle = false;
-            if(_win.hints & NEKO_HINT_FULL_SCREEN) {
-                neko_UpdateSizeMode(&_win, NEKO_HINT_NO_FULL_SCREEN);
-            }
-            else if(_win.hints & NEKO_HINT_NO_FULL_SCREEN) {
-                neko_UpdateSizeMode(&_win, NEKO_HINT_FULL_SCREEN);
-            }
-        }
-
-        else if(neko_FindKeyStatus(NEKO_KEY_Q, NEKO_INPUT_EVENT_TYPE_ACTIVE))
+    while(parent.is_running) {
+        neko_UpdateWindow(&parent);
+        if (!draw(parent, allow_toggle))
             break;
-
-        else if(neko_FindKeyStatus(NEKO_KEY_H, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
-            allow_toggle = false;
-            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_HIDDEN);
-        }
-
-        else if(neko_FindKeyStatus(NEKO_KEY_S, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
-            allow_toggle = false;
-            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_STANDARD);
-        }
-
-        else if(neko_FindKeyStatus(NEKO_KEY_P, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
-            allow_toggle = false;
-            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_POINTER);
-        }
-
-        else if(neko_FindKeyStatus(NEKO_KEY_W, NEKO_INPUT_EVENT_TYPE_ACTIVE) && allow_toggle) {
-            allow_toggle = false;
-            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_WAITING);
-        }
-
-
-        if(neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-           neko_FindKeyStatus(NEKO_KEY_H, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-           neko_FindKeyStatus(NEKO_KEY_S, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-           neko_FindKeyStatus(NEKO_KEY_P, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-           neko_FindKeyStatus(NEKO_KEY_W, NEKO_INPUT_EVENT_TYPE_RELEASED)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            allow_toggle = true;
-        }
     }
 
     std::cout << "Done" << std::endl;
 }
 
 
-void cleanup(neko_Window &_win) {
+void cleanup(neko_Window &_parent) {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ibo);
     glDeleteProgram(sh_program);
 
-    neko_DestroyWindow(&_win);
+    neko_DestroyWindow(&_parent);
     neko_DeinitAPI();
 }
 
@@ -264,7 +271,8 @@ int main() {
     
     // Create a new window
     neko_InitAPI();
-    neko_Window parent_win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, nullptr, 0, 0, "GLTest");
+    neko_Window parent_win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, 0, 0, "GLTest");
+    neko_glMakeCurrent(&parent_win);
 
     int status = neko_LoadGL();
     if(!status) {

@@ -23,10 +23,8 @@ set(LIBNWIN_SOURCES
 
 # Add platform specific sources
 if(WIN32)
-    list(APPEND LIBNWIN_HEADERS include/win32_window.h)
     list(APPEND LIBNWIN_SOURCES src/win32_window.c)
 elseif(UNIX AND NOT APPLE)
-    list(APPEND LIBNWIN_HEADERS include/x11_window.h)
     list(APPEND LIBNWIN_SOURCES src/x11_window.c)
 elseif(APPLE)
     message(FATAL_ERROR "Nekowin does not support MacOS")
