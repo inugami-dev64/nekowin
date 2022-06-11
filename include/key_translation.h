@@ -224,8 +224,8 @@ typedef uint64_t neko_InputBits;
     neko_HidEvent _neko_TranslateX11Key(KeySym keysym);
     neko_HidEvent _neko_TranslateX11Btn(uint32_t button);
 #elif defined(_WIN32) && defined(__NWIN_C)
-    neko_HidEvent translateWIN32Key(uint16_t key_code);
-    neko_HidEvent translateWIN32Btn(UINT msg);
+    neko_HidEvent _neko_TranslateWIN32Key(uint16_t key_code);
+    neko_HidEvent _neko_TranslateWIN32Btn(UINT msg);
 #endif
 
 #ifdef __cplusplus

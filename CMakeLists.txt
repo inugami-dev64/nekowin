@@ -21,15 +21,16 @@ include(cmake/libnwin.cmake)
 
 # Set appropriate compiler flags
 if(MSVC)
-    add_compile_options(/W3 -D_CRT_SECURE_NO_WARNINGS /std:c++14 /std:c17)
+    add_compile_options(/W3)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 
     if(CMAKE_BUILD_TYPE MATCHES Debug)
-        add_compile_options(/0d)
+        add_compile_options(/Od)
     else()
-        add_compile_options(/02)
+        add_compile_options(/O2)
     endif()
 else()
-    add_compile_options(-Wall -Wextra)
+    add_compile_options(-Wall -Wextra -std=c++14)
 
     if(CMAKE_BUILD_TYPE MATCHES Debug)
         add_compile_options(-O0)
