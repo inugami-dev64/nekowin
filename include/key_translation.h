@@ -220,12 +220,10 @@ typedef uint64_t neko_InputBits;
 #define MAX_KEY_COMBO   8
 
 
-#ifdef __linux__
-    neko_HidEvent translateX11Key(KeySym keysym);
-    neko_HidEvent translateX11Btn(uint32_t button);
-#endif
-
-#ifdef WIN32
+#if defined(__linux__) && defined(__NWIN_C)
+    neko_HidEvent _neko_TranslateX11Key(KeySym keysym);
+    neko_HidEvent _neko_TranslateX11Btn(uint32_t button);
+#elif defined(_WIN32) && defined(__NWIN_C)
     neko_HidEvent translateWIN32Key(uint16_t key_code);
     neko_HidEvent translateWIN32Btn(UINT msg);
 #endif

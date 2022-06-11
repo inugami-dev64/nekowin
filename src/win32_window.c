@@ -36,28 +36,28 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(
 
         case WM_SYSKEYDOWN:
         case WM_KEYDOWN:
-            hid_ev = translateWIN32Key((uint16_t) _wparam);
+            hid_ev = _neko_TranslateWIN32Key((uint16_t) _wparam);
             _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
             break;
 
         case WM_SYSKEYUP:
         case WM_KEYUP:
         case WM_IME_KEYUP:
-            hid_ev = translateWIN32Key((uint16_t) _wparam);
+            hid_ev = _neko_TranslateWIN32Key((uint16_t) _wparam);
             _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
             break;
 
         case WM_LBUTTONDOWN:
         case WM_MBUTTONDOWN:
         case WM_RBUTTONDOWN:
-            hid_ev = translateWIN32Btn(_msg);
+            hid_ev = _neko_TranslateWIN32Btn(_msg);
             _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
             break;
 
         case WM_LBUTTONUP:
         case WM_MBUTTONUP:
         case WM_RBUTTONUP:
-            hid_ev = translateWIN32Btn(_msg);
+            hid_ev = _neko_TranslateWIN32Btn(_msg);
             _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
             break;
 

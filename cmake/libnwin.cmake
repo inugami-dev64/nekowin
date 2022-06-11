@@ -9,13 +9,14 @@ set(LIBNWIN_SHARED_TARGET nwin-shared)
 set(LIBNWIN_HEADERS
     include/key_ev.h
     include/key_translation.h
+    include/limit_vc.h
     include/nekodll.h
     include/nwin.h
     include/third_party/glad/glad.h
-    include/window.h
 )
 
 set(LIBNWIN_SOURCES
+    src/limit_vc.c
     src/glad.c
     src/key_ev.c
     src/key_translation.c

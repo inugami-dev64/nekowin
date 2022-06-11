@@ -50,13 +50,13 @@ extern "C" {
 
     // Global static varible declarations
     // Specify maximum and minimum virtual cursor positions
-    static int64_t __min_vc_x = INT64_MIN;
-    static int64_t __max_vc_x = INT64_MAX;
-    static int64_t __min_vc_y = INT64_MIN;
-    static int64_t __max_vc_y = INT64_MAX;
+    int64_t __min_vc_x = INT64_MIN;
+    int64_t __max_vc_x = INT64_MAX;
+    int64_t __min_vc_y = INT64_MIN;
+    int64_t __max_vc_y = INT64_MAX;
 
-    static int64_t __prev_x = 0;
-    static int64_t __prev_y = 0;
+    int64_t __prev_x = 0;
+    int64_t __prev_y = 0;
 
     // VCP overflow action specifiers
     neko_VCPOverflowAction __x_overflow_act = NEKO_VCP_OVERFLOW_ACTION_BLOCK_POSITION;
@@ -383,8 +383,7 @@ LIBNWIN_API void neko_UpdateMousePos(neko_Window *_win);
 /// Acquire all required Vulkan extension strings
 LIBNWIN_API char **neko_FindRequiredVkExtensionStrings(uint32_t *_p_ext_s);
 
-/// Set VSync on or off
-//LIBNWIN_API void neko_SetVSync(neko_Window _win, bool _on);
+#include "../include/limit_vc.h"
 
 #ifdef __cplusplus
 }

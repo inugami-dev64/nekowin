@@ -14,7 +14,7 @@
 /// Unlike WIN32 api X11 doesn't have a callback system on events, which
 /// means that key events must be checked manually on every frame update 
 void _neko_HandleKeyEvents(int _type, XKeyEvent *_kev) {
-    neko_HidEvent hid_ev = translateX11Key(XLookupKeysym(_kev, 0));
+    neko_HidEvent hid_ev = _neko_TranslateX11Key(XLookupKeysym(_kev, 0));
 
     switch(_type) {
         case KeyPress: 
@@ -33,7 +33,7 @@ void _neko_HandleKeyEvents(int _type, XKeyEvent *_kev) {
 
 /// Check for any mouse button events
 void _neko_HandleMouseEvents(int _type, XButtonEvent *_bev) {
-    neko_HidEvent hid_ev = translateX11Btn(_bev->button);
+    neko_HidEvent hid_ev = _neko_TranslateX11Btn(_bev->button);
 
     switch(_type) {
         case ButtonPress:
