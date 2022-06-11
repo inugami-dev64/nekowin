@@ -13,7 +13,7 @@
 
 /// Unlike WIN32 api X11 doesn't have a callback system on events, which
 /// means that key events must be checked manually on every frame update 
-static void _neko_HandleKeyEvents(int _type, XKeyEvent *_kev) {
+void _neko_HandleKeyEvents(int _type, XKeyEvent *_kev) {
     neko_HidEvent hid_ev = translateX11Key(XLookupKeysym(_kev, 0));
 
     switch(_type) {
@@ -32,7 +32,7 @@ static void _neko_HandleKeyEvents(int _type, XKeyEvent *_kev) {
 
 
 /// Check for any mouse button events
-static void _neko_HandleMouseEvents(int _type, XButtonEvent *_bev) {
+void _neko_HandleMouseEvents(int _type, XButtonEvent *_bev) {
     neko_HidEvent hid_ev = translateX11Btn(_bev->button);
 
     switch(_type) {
@@ -51,7 +51,7 @@ static void _neko_HandleMouseEvents(int _type, XButtonEvent *_bev) {
 
 
 // Set the new mouse position according to the current mouse movement mode
-static void _neko_HandleMouseMovement(neko_Window *_win, int64_t _x, int64_t _y) {
+void _neko_HandleMouseMovement(neko_Window *_win, int64_t _x, int64_t _y) {
     if(_win->vc_data.is_enabled) {
         int64_t delta_x = _x - _win->vc_data.orig_x;
         int64_t delta_y = _y - _win->vc_data.orig_y;
@@ -94,7 +94,7 @@ static void _neko_HandleMouseMovement(neko_Window *_win, int64_t _x, int64_t _y)
 }
 
 
-static void _neko_GetVisualInfo(neko_Window *_win) {
+void _neko_GetVisualInfo(neko_Window *_win) {
     if(_win->hints & NEKO_HINT_API_OPENGL) {
         GLint attrs[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
         XVisualInfo *vi = glXChooseVisual(_neko_API.display, 0, attrs);
@@ -113,7 +113,7 @@ static void _neko_GetVisualInfo(neko_Window *_win) {
 }
 
 
-static void _neko_SendClientMessage(neko_Window *_win, Atom _msg_type, long *_data) {
+void _neko_SendClientMessage(neko_Window *_win, Atom _msg_type, long *_data) {
     XEvent ev = { ClientMessage };
     ev.xclient.window = _win->x11.window;
     ev.xclient.format = 32;
@@ -128,7 +128,7 @@ static void _neko_SendClientMessage(neko_Window *_win, Atom _msg_type, long *_da
 }
 
 
-static void _neko_UpdateWindowSize(neko_Window *_win) {
+void _neko_UpdateWindowSize(neko_Window *_win) {
     if (!(_win->hints & NEKO_HINT_FIXED_SIZE) && !(_win->hints & NEKO_HINT_RESIZEABLE) && !(_win->hints & NEKO_HINT_FULL_SCREEN))
         _win->hints |= NEKO_HINT_FIXED_SIZE;
 
@@ -169,7 +169,7 @@ static void _neko_UpdateWindowSize(neko_Window *_win) {
 
 
 /// Load all available platform specific nekowin cursors
-static void _neko_LoadCursors() {
+void _neko_LoadCursors() {
     _neko_API.cursors.standard = XCreateFontCursor(_neko_API.display, XC_left_ptr);
     _neko_API.cursors.pointer = XCreateFontCursor(_neko_API.display, XC_hand2);
     _neko_API.cursors.waiting = XCreateFontCursor(_neko_API.display, XC_watch);
@@ -314,7 +314,7 @@ neko_Window neko_NewWindow (
     XSetWMProtocols(_neko_API.display, win.x11.window, &_neko_API.atoms.WM_DELETE_WINDOW, True);
 
     if(_hints & NEKO_HINT_API_OPENGL)
-        _win->x11.glc = glXCreateContext(_neko_API.display, _win->x11.p_vi, NULL, GL_TRUE);
+        win.x11.glc = glXCreateContext(_neko_API.display, win.x11.p_vi, NULL, GL_TRUE);
 
     win.is_running = true;
     XFlush(_neko_API.display);

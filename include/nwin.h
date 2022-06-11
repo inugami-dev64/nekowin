@@ -287,7 +287,7 @@ typedef struct neko_Window {
 } neko_Window;
 
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(__NWIN_C)
     /// Inner function declarations for X11 backend
     static void _neko_HandleKeyEvents(int _type, XKeyEvent *_kev); 
     static void _neko_HandleMouseEvents(int _type, XButtonEvent *_bev); 
@@ -296,10 +296,8 @@ typedef struct neko_Window {
     static void _neko_SendClientMessage(neko_Window *_win, Atom _msg_type, long *_data);
     static void _neko_UpdateWindowSize(neko_Window *_win);
     static void _neko_LoadCursors();
-#elif defined(_WIN32)
-    #ifdef __NWIN_C
-        static neko_Window  *__p_win = NULL;
-    #endif
+#elif defined(_WIN32) && defined(__NWIN_C)
+    static neko_Window  *__p_win = NULL;
 
     // Win32 implementation specific functions
     static LRESULT CALLBACK _neko_Win32MessageHandler(HWND _hwnd, UINT _msg, WPARAM _param, LPARAM _lparam);
