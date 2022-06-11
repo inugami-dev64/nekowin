@@ -6,7 +6,6 @@
 #ifndef __NWIN_H
 #define __NWIN_H
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,12 +21,12 @@ extern "C" {
         #include <X11/keysym.h>
         #include <X11/XKBlib.h> 
     #endif
+
+    /// Custom macros
+    #define neko_assert(val, msg) if(!val) fprintf(stderr, "Assertion failed in %s:%u\n%s\n", __FILE__, __LINE__, msg), abort()
+    #define pcast(T, src) ((T) ((uint64_t) (src)))
 #endif
 
-
-/// Custom macros
-#define neko_assert(val, msg) if(!val) fprintf(stderr, "Assertion failed in %s:%u\n%s\n", __FILE__, __LINE__, msg), abort()
-#define pcast(T, src) ((T) ((uint64_t) (src)))
 
 /// OpenGL version definition macros
 #define OPENGL_SUPPORTED_MAJOR  4
