@@ -200,6 +200,11 @@ typedef uint8_t neko_HidEvent;
 #define NEKO_MOUSE_DELTA_Y          124
 #define NEKO_MOUSE_DELTA_NY         125
 
+/// Maximum values
+#define NEKO_KEY_MAX                NEKO_KEY_MENU
+#define NEKO_MOUSE_MAX              NEKO_MOUSE_SCROLL_UP
+#define NEKO_MOUSE_DELTA_MAX        NEKO_MOUSE_DELTA_NY
+
 
 /// Enumeral values for nekowin cursors
 typedef enum neko_CursorMode {

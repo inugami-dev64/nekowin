@@ -51,12 +51,11 @@ bool neko_FindKeyStatus(neko_HidEvent event, neko_InputEventType ev_type) {
 }
 
 
-uint32_t neko_GetActiveInput() { return active_mask; }
-
-
 /// Clean released key and mouse button array 
 void _neko_UnreleaseKeys() {
     memset(released_ev, 0x00, sizeof(released_ev));
+    memset(&active_queue, 0x00, sizeof(active_queue));
+    memset(&released_queue, 0x00, sizeof(released_queue));
     active_ev[NEKO_MOUSE_SCROLL_DOWN] = false;
     active_ev[NEKO_MOUSE_SCROLL_UP] = false;
 }
@@ -69,6 +68,7 @@ void _neko_RegisterKeyEvent(neko_HidEvent event, neko_InputEventType ev_type) {
         case NEKO_INPUT_EVENT_TYPE_ACTIVE:
             active_ev[event] = true;
             released_ev[event] = false;
+            active_queue.events[active_queue.size++] = event;
             break;
 
         case NEKO_INPUT_EVENT_TYPE_RELEASED:
@@ -76,10 +76,31 @@ void _neko_RegisterKeyEvent(neko_HidEvent event, neko_InputEventType ev_type) {
             if(event != NEKO_MOUSE_SCROLL_DOWN && event != NEKO_MOUSE_SCROLL_UP) {
                 active_ev[event] = false;
                 released_ev[event] = true;
+                released_queue.events[released_queue.size++] = event;
             }
             break;
 
         default:
             break;
     }
+}
+
+
+const bool *neko_GetActiveInputTable() {
+    return active_ev;
+}
+
+
+const bool *neko_GetReleasedInputTable() {
+    return released_ev;
+}
+
+
+const EventQueue *neko_GetActiveInputQueue() {
+    return &active_queue;
+}
+
+
+const EventQueue *neko_GetReleasedInputQueue() {
+    return &released_queue;
 }
