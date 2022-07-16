@@ -1,3 +1,5 @@
+/// NOTE: Deprecated file, kept for reference
+
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
 /// licence: Apache, see LICENCE.md
 /// file: key_definitions.h - keycode definitions' header
@@ -24,15 +26,6 @@ extern "C" {
 #ifdef _WIN32 
     #include <windows.h>
 #endif
-
-
-typedef uint16_t neko_Hint;
-#define NEKO_HINT_API_OPENGL        0x0001
-#define NEKO_HINT_API_VULKAN        0x0002
-#define NEKO_HINT_FULL_SCREEN       0x0004
-#define NEKO_HINT_FIXED_SIZE        0x0008
-#define NEKO_HINT_RESIZEABLE        0x0010
-#define NEKO_HINT_NO_FULL_SCREEN    0x0010
 
 
 /// All size hints

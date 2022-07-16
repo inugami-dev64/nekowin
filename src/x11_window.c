@@ -3,45 +3,68 @@
 /// file: x11_surface.c - x11 window / surface creation handler source file
 /// author: Karl-Mihkel Ott
 
-#define __NWIN_C
-#define __X11_WINDOW_C
+#include <X11/Xlib.h>
+#define X11_WINDOW_C
 #include <nwin.h>
 
 /*****************************/
 /****** Inner functions ******/
 /*****************************/
 
-/// Unlike WIN32 api X11 doesn't have a callback system on events, which
-/// means that key events must be checked manually on every frame update 
-void _neko_HandleKeyEvents(int _type, XKeyEvent *_kev) {
-    neko_HidEvent hid_ev = _neko_TranslateX11Key(XLookupKeysym(_kev, 0));
+void _neko_RegisterRaw(neko_Window *_win, int _type, XKeyEvent *_kev) {
+    KeySym sym = XLookupKeysym(_kev, 0);
+    neko_HidEvent hid_ev = _neko_TranslateKeyX11(sym);
 
     switch(_type) {
-        case KeyPress: 
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+        case KeyPress:
+            _neko_RegisterInputEvent(&_win->input, hid_ev, true);
             break;
         
         case KeyRelease:
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
+            _neko_RegisterInputEvent(&_win->input, hid_ev, false);
             break;
 
         default:
             break;
     }
+}
+
+void _neko_HandleKeyEvents(neko_Window *_win, int _type, XKeyEvent *_kev) {
+    
+    KeySym sym = 0;
+    if(_win->input.use_text_mode && _type == KeyPress) {
+        XLookupString(_kev, NULL, 0, &sym, NULL);
+
+        // Latin-1 characters with 1:1 mapping
+        if((sym >= 0x0020 && sym <= 0x007e) || (sym >= 0x00a0 && sym <= 0x00ff)) {
+            _win->input.text.ucs[_win->input.text.size++] = (uint16_t) sym;
+        } else if((sym & 0xff000000) == 0x01000000) {  // directly encoded unicode characters
+            _win->input.text.ucs[_win->input.text.size++] = (uint16_t) (sym & 0x00ffffff);
+        } else {
+            uint16_t uc = _neko_KeysymToUnicode(sym);
+            if(uc) { 
+                _win->input.text.ucs[_win->input.text.size++] = _neko_KeysymToUnicode(sym);
+            } else {
+                _neko_RegisterRaw(_win, _type, _kev);
+            }
+        }
+    } else {
+        _neko_RegisterRaw(_win, _type, _kev);        
+    }
 } 
 
 
 /// Check for any mouse button events
-void _neko_HandleMouseEvents(int _type, XButtonEvent *_bev) {
-    neko_HidEvent hid_ev = _neko_TranslateX11Btn(_bev->button);
+void _neko_HandleMouseEvents(neko_Window *_win, int _type, XButtonEvent *_bev) {
+    neko_HidEvent hid_ev = _neko_TranslateMouseBtnX11(_bev->button);
 
     switch(_type) {
         case ButtonPress:
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_ACTIVE);
+            _neko_RegisterInputEvent(&_win->input, hid_ev, true);
             break;
         
         case ButtonRelease:
-            _neko_RegisterKeyEvent(hid_ev, NEKO_INPUT_EVENT_TYPE_RELEASED);
+            _neko_RegisterInputEvent(&_win->input, hid_ev, false);
             break;
 
         default:
@@ -52,44 +75,42 @@ void _neko_HandleMouseEvents(int _type, XButtonEvent *_bev) {
 
 // Set the new mouse position according to the current mouse movement mode
 void _neko_HandleMouseMovement(neko_Window *_win, int64_t _x, int64_t _y) {
-    if(_win->vc_data.is_enabled) {
-        int64_t delta_x = _x - _win->vc_data.orig_x;
-        int64_t delta_y = _y - _win->vc_data.orig_y;
+    if(_win->input.cursor.is_virtual) {
+        int64_t delta_x = _x - _win->input.cursor.orig_x;
+        int64_t delta_y = _y - _win->input.cursor.orig_y;
 
-        if(_x != _win->vc_data.orig_x || _y != _win->vc_data.orig_y)
-            neko_SetMouseCoords(_win, _win->vc_data.orig_x, _win->vc_data.orig_y);
+        if(delta_x || delta_y)
+            neko_SetMouseCoords(_win, _win->input.cursor.orig_x, _win->input.cursor.orig_y);
 
         // Check for overflow on x position
-        if(_win->vc_data.x + delta_x >= __max_vc_x) {
-            if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                _win->vc_data.x = __min_vc_x;
-        }
-        
-        else if(_win->vc_data.x + delta_x <= __min_vc_x) {
-            if(__x_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                _win->vc_data.x = __max_vc_x;
+        if(_win->input.cursor.x + delta_x >= _win->input.cursor.max_vc_x) {
+            if(_win->input.cursor.x_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
+                _win->input.cursor.x = _win->input.cursor.min_vc_x;
+        } else if(_win->input.cursor.x + delta_x <= _win->input.cursor.min_vc_x) {
+            if(_win->input.cursor.x_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
+                _win->input.cursor.x = _win->input.cursor.max_vc_x;
         }
 
-        else _win->vc_data.x += delta_x;
+        else _win->input.cursor.x += delta_x;
 
 
         // Check for overflow on y position
-        if(_win->vc_data.y + delta_y >= __max_vc_y) {
-            if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                _win->vc_data.y = __min_vc_y;
+        if(_win->input.cursor.y + delta_y >= _win->input.cursor.max_vc_y) {
+            if(_win->input.cursor.y_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
+                _win->input.cursor.y = _win->input.cursor.max_vc_y;
         }
         
-        else if(_win->vc_data.y + delta_y <= __min_vc_y) {
-            if(__y_overflow_act == NEKO_VCP_OVERFLOW_ACTION_TO_OPPOSITE_POSITION)
-                _win->vc_data.y = __max_vc_y;
+        else if(_win->input.cursor.y + delta_y <= _win->input.cursor.max_vc_y) {
+            if(_win->input.cursor.y_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
+                _win->input.cursor.y = _win->input.cursor.max_vc_y;
         }
 
-        else _win->vc_data.y += delta_y;
+        else _win->input.cursor.y += delta_y;
     }
 
     else {
-        _win->mx = _x;
-        _win->my = _y;
+        _win->input.cursor.x = _x;
+        _win->input.cursor.y = _y;
     }
 }
 
@@ -99,7 +120,7 @@ void _neko_GetVisualInfo(neko_Window *_win) {
         GLint attrs[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
         XVisualInfo *vi = glXChooseVisual(_neko_API.display, 0, attrs);
 
-        neko_assert(vi, "Failed to choose GLX visual");
+        except(vi, "Failed to choose GLX visual")
         _win->x11.p_vi = vi;
     }
 
@@ -204,9 +225,7 @@ void neko_InitAPI() {
 
     // Check if detectable keyboard autorepeat is supported
     Bool supported;
-    neko_assert(XkbSetDetectableAutoRepeat(_neko_API.display, True, &supported), 
-                "DetectableAutoRepeat is not supported");
-
+    except(XkbSetDetectableAutoRepeat(_neko_API.display, True, &supported), "XkbDetectableAutoRepeat() is not supported")
 
     // verify that GLX_EXT_swap_control extension is present
     const char* extensions = glXQueryExtensionsString(_neko_API.display, _neko_API.scr);
@@ -261,8 +280,8 @@ neko_Window neko_NewWindow (
     int32_t _spawn_y,
     const char *_title
 ) {
-    neko_assert(_neko_API.is_init, "Please initialise neko library with neko_InitAPI() before creating new windows");
-    neko_Window win = {};
+    except(_neko_API.is_init, "Please initialise neko library with neko_InitAPI() before creating new windows");
+    neko_Window win = { 0 };
 
     // Fill the window structure
     win.owidth = (win.cwidth = _width);
@@ -272,11 +291,8 @@ neko_Window neko_NewWindow (
     win.window_title = _title;
 
     win.hints = _hints;
-    win.vc_data.is_enabled = false;
-    win.vc_data.orig_x = (float) _width / 2.0f;
-    win.vc_data.orig_y = (float) _height / 2.0f;
-    win.vc_data.x = 0;
-    win.vc_data.y = 0;
+    win.input.cursor.orig_x = (int64_t) _width >> 1;
+    win.input.cursor.orig_y = (int64_t) _height >> 1;
  
     // Retrieve visual info about the window
     _neko_GetVisualInfo(&win);
@@ -304,7 +320,7 @@ neko_Window neko_NewWindow (
     }
 
     // Check if the window was created successfully
-    neko_assert(win.x11.window, "Failed to create x11 window!");
+    except(win.x11.window, "Failed to create x11 window!");
     XMapWindow(_neko_API.display, win.x11.window);
     XStoreName(_neko_API.display, win.x11.window, win.window_title);
 
@@ -344,7 +360,7 @@ VkResult neko_InitVkSurface (
 void neko_UpdateWindow(neko_Window *_win) {
     // Set notfiy booleans to false for updating resize update information
     _win->resize_notify = false;
-    _neko_UnreleaseKeys();
+    _neko_ClearReleasedInputs();
     
     XPending(_neko_API.display);
     while(QLength(_neko_API.display)) {
@@ -364,8 +380,8 @@ void neko_UpdateWindow(neko_Window *_win) {
                         _win->resize_notify = true;
                         _win->cwidth = xce->width;
                         _win->cheight = xce->height;
-                        _win->vc_data.orig_x = _win->cwidth / 2;
-                        _win->vc_data.orig_y = _win->cheight / 2;
+                        _win->input.cursor.orig_x = _win->cwidth / 2;
+                        _win->input.cursor.orig_y = _win->cheight / 2;
                     }
                 }
                 break;
@@ -374,7 +390,7 @@ void neko_UpdateWindow(neko_Window *_win) {
             case KeyRelease:
                 {
                     XKeyEvent *kev = &ev.xkey;
-                    _neko_HandleKeyEvents(ev.type, kev);
+                    _neko_HandleKeyEvents(_win, ev.type, kev);
                 }
                 break;
 
@@ -382,7 +398,7 @@ void neko_UpdateWindow(neko_Window *_win) {
             case ButtonRelease:
                 {
                     XButtonEvent *bev = &ev.xbutton;
-                    _neko_HandleMouseEvents(ev.type, bev);
+                    _neko_HandleMouseEvents(_win, ev.type, bev);
                 }
                 break;
 
@@ -489,12 +505,12 @@ char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
 
 #ifdef _DEBUG
     *_ext_c = 3;
-    strcpy(exts[2], NEKO_VK_DEBUG_UTILS_EXT_NAME);
+    strcpy(exts[2], "VK_KHR_debug_utils");
 #else
     *_ext_c = 2;
 #endif
-    strcpy(exts[0], NEKO_VK_WSI_EXT_NAME);
-    strcpy(exts[1], NEKO_VK_XLIB_SURFACE_EXT_NAME);
+    strcpy(exts[0], "VK_KHR_surface");
+    strcpy(exts[1], "VK_KHR_xlib_surface");
 
     return exts;
 }

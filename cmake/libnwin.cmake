@@ -7,28 +7,31 @@ set(LIBNWIN_STATIC_TARGET nwin-static)
 set(LIBNWIN_SHARED_TARGET nwin-shared)
 
 set(LIBNWIN_HEADERS
-    include/key_ev.h
-    include/key_translation.h
-    include/limit_vc.h
+    include/input.h
     include/nekodll.h
-    include/nwin.h
-    include/third_party/glad/glad.h
+    include/nwin.h 
 )
 
 set(LIBNWIN_SOURCES
-    src/limit_vc.c
     src/glad.c
-    src/key_ev.c
-    src/key_translation.c
+    src/input.c
 )
 
 # Add platform specific sources
 if(WIN32)
     list(APPEND LIBNWIN_SOURCES src/win32_window.c)
+    message(FATAL_ERROR "Nekowin unicode does not support windows")
 elseif(UNIX AND NOT APPLE)
-    list(APPEND LIBNWIN_SOURCES src/x11_window.c)
+    list(APPEND LIBNWIN_HEADERS
+        include/x11_translation.h
+        include/xkb_unicode.h)
+
+    list(APPEND LIBNWIN_SOURCES 
+        src/x11_translation.c
+        src/x11_window.c
+        src/xkb_unicode.c)
 elseif(APPLE)
-    message(FATAL_ERROR "Nekowin does not support MacOS")
+    message(FATAL_ERROR "Nekowin does not support macos")
 endif()
 
 # Check if debug mode is used

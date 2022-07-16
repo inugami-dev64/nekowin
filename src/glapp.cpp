@@ -190,47 +190,68 @@ int draw(neko_Window &_win, bool &_allow_toggle) {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     err_check("glDrawElements");
 
-    if (neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
-        _allow_toggle = false;
-        if (_win.hints & NEKO_HINT_FULL_SCREEN) {
-            neko_UpdateSizeMode(&_win, NEKO_HINT_NO_FULL_SCREEN);
+    if(!_win.input.use_text_mode) {
+        if(_win.input.raw.active_table[NEKO_KEY_F] && _allow_toggle) {
+            _allow_toggle = false;
+            if (_win.hints & NEKO_HINT_FULL_SCREEN) {
+                std::cout << "glapp: Disabling full-screen mode" << std::endl;
+                neko_UpdateSizeMode(&_win, NEKO_HINT_NO_FULL_SCREEN);
+            }
+            else if (_win.hints & NEKO_HINT_NO_FULL_SCREEN) {
+                std::cout << "glapp: Enabling full-screen mode" << std::endl;
+                neko_UpdateSizeMode(&_win, NEKO_HINT_FULL_SCREEN);
+            }
+        } else if (_win.input.raw.active_table[NEKO_KEY_ESCAPE] && _allow_toggle) {
+            std::cout << "glapp: Unicode input mode is enabled. Text will be outputted to the console" << std::endl;
+            _allow_toggle = false;
+            _win.input.use_text_mode = true;
+        } else if (_win.input.raw.active_table[NEKO_KEY_Q] && _allow_toggle) {
+            std::cout << "glapp: Quitting, bye!" << std::endl;
+            return 0;
+        } else if (_win.input.raw.active_table[NEKO_KEY_H] && _allow_toggle) {
+            std::cout << "glapp: Cursor is now in hidden mode" << std::endl;
+            _allow_toggle = false;
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_HIDDEN);
+        } else if (_win.input.raw.active_table[NEKO_KEY_S] && _allow_toggle) {
+            std::cout << "glapp: Cursor is now in standard mode" << std::endl;
+            _allow_toggle = false;
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_STANDARD);
+        } else if (_win.input.raw.active_table[NEKO_KEY_P] && _allow_toggle) {
+            std::cout << "glapp: Cursor is now in pointer mode" << std::endl;
+            _allow_toggle = false;
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_POINTER);
+        } else if (_win.input.raw.active_table[NEKO_KEY_W] && _allow_toggle) {
+            std::cout << "glapp: Cursor is now in waiting mode" << std::endl;
+            _allow_toggle = false;
+            neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_WAITING);
         }
-        else if (_win.hints & NEKO_HINT_NO_FULL_SCREEN) {
-            neko_UpdateSizeMode(&_win, NEKO_HINT_FULL_SCREEN);
+
+        if (_win.input.raw.released_table[NEKO_KEY_F] ||
+            _win.input.raw.released_table[NEKO_KEY_ESCAPE] ||
+            _win.input.raw.released_table[NEKO_KEY_H] ||
+            _win.input.raw.released_table[NEKO_KEY_S] ||
+            _win.input.raw.released_table[NEKO_KEY_P] ||
+            _win.input.raw.released_table[NEKO_KEY_W]) 
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            _allow_toggle = true;
         }
-    }
+    } else {
+        // check if disabling text mode is required
+        if(_win.input.raw.active_table[NEKO_KEY_ESCAPE] && _allow_toggle) {
+            std::cout << "glapp: Unicode input mode is disabled." << std::endl;
+            _allow_toggle = false;
+            _win.input.use_text_mode = false;
+        } 
+        
+        if(_win.input.raw.released_table[NEKO_KEY_ESCAPE]) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            _allow_toggle = true;
+        }
 
-    else if (neko_FindKeyStatus(NEKO_KEY_Q, NEKO_INPUT_EVENT_TYPE_ACTIVE))
-        return 0;
-
-    else if (neko_FindKeyStatus(NEKO_KEY_H, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
-        _allow_toggle = false;
-        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_HIDDEN);
-    }
-
-    else if (neko_FindKeyStatus(NEKO_KEY_S, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
-        _allow_toggle = false;
-        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_STANDARD);
-    }
-
-    else if (neko_FindKeyStatus(NEKO_KEY_P, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
-        _allow_toggle = false;
-        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_POINTER);
-    }
-
-    else if (neko_FindKeyStatus(NEKO_KEY_W, NEKO_INPUT_EVENT_TYPE_ACTIVE) && _allow_toggle) {
-        _allow_toggle = false;
-        neko_SetMouseCursorMode(&_win, NEKO_CURSOR_MODE_WAITING);
-    }
-
-
-    if (neko_FindKeyStatus(NEKO_KEY_F, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-        neko_FindKeyStatus(NEKO_KEY_H, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-        neko_FindKeyStatus(NEKO_KEY_S, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-        neko_FindKeyStatus(NEKO_KEY_P, NEKO_INPUT_EVENT_TYPE_RELEASED) ||
-        neko_FindKeyStatus(NEKO_KEY_W, NEKO_INPUT_EVENT_TYPE_RELEASED)) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        _allow_toggle = true;
+        for(uint32_t i = 0; i < _win.input.text.size; i++) {
+            std::cout << _win.input.text.ucs[i] << std::flush;
+        }
     }
 
     return 1;

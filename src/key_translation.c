@@ -1,3 +1,5 @@
+/// NOTE: Deprecated file, kept for reference
+
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
 /// licence: Apache, see LICENCE.md
 /// file: key_translation.c - native api key code translator source file
