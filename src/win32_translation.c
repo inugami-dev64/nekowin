@@ -53,7 +53,7 @@ neko_HidEvent _neko_TranslateWin32Key(WPARAM _key) {
         case 0x59:                  return NEKO_KEY_Y;
         case 0x5A:                  return NEKO_KEY_Z;
 
-            // Function keys
+        // Function keys
         case VK_ESCAPE:             return NEKO_KEY_ESCAPE;
         case VK_RETURN:             return NEKO_KEY_ENTER;
         case VK_TAB:                return NEKO_KEY_TAB;

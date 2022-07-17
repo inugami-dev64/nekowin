@@ -261,6 +261,7 @@ typedef struct neko_Window {
 #elif defined(WIN32_WINDOW_C)
     // Win32 implementation specific functions
     static LRESULT CALLBACK _neko_Win32MessageHandler(HWND _hwnd, UINT _msg, WPARAM _param, LPARAM _lparam);
+    static bool _neko_CheckFunctionKey(WPARAM _key);
     static DWORD _neko_HandleSizeHints(neko_Window *_win);
     static void _neko_HandleMouseMovement(neko_Window* _win, POINT _pt);
     static void _neko_CreateGLContext(neko_Window *_win);

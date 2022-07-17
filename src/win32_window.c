@@ -41,8 +41,8 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(
         case WM_SYSKEYDOWN:
         case WM_IME_KEYDOWN:
         {
-            if(!_active_window->input.use_text_mode) {
-                neko_HidEvent hid = _neko_TranslateWin32Key(_wparam);
+            neko_HidEvent hid = _neko_TranslateWin32Key(_wparam);
+            if(!_active_window->input.use_text_mode || (hid >= NEKO_KEY_ESCAPE && hid <= NEKO_KEY_MENU)) {
                 _neko_RegisterInputEvent(&_active_window->input, hid, true);
             }
             break;
@@ -53,7 +53,9 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(
         case WM_IME_KEYUP:
         {
             neko_HidEvent hid = _neko_TranslateWin32Key(_wparam);
-            _neko_RegisterInputEvent(&_active_window->input, hid, false);
+            if (!_active_window->input.use_text_mode || (hid >= NEKO_KEY_ESCAPE && hid <= NEKO_KEY_MENU)) {
+                _neko_RegisterInputEvent(&_active_window->input, hid, false);
+            }
             break;
         }
 
