@@ -30,6 +30,7 @@ extern "C" {
 #include <vulkan/vulkan.h>
 #include "nekodll.h"
 #include "input.h"
+#include "gamepad.h"
 #include "glad/glad.h"
 
 // Hint declarations

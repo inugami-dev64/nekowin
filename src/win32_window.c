@@ -1,6 +1,6 @@
 /// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
 /// licence: Apache, see LICENCE.md
-/// file: win32.c - win32 window / surface creation handler header file
+/// file: win32_window.c - win32 window / surface creation handler header file
 /// author: Karl-Mihkel Ott
 
 #define WIN32_WINDOW_C

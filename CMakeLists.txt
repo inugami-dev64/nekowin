@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(VULKAN_SDK_PATH CACHE STRING "")
 option(NEKOWIN_BUILD_GLAPP "Build a sample application using nekowin and OpenGL" ON)
+option(NEKOWIN_BUILD_GAMEPAD_INFO "Build a sample console application for testing controller inputs" ON)
 option(NEKOWIN_BUILD_STATIC_LIB "Build nekowin as a static library" ON)
 option(NEKOWIN_BUILD_SHARED_LIB "Build nekowin as a shared library" ON)
 
@@ -37,6 +38,10 @@ else()
     else()
         add_compile_options(-O3)
     endif()
+endif()
+
+if(NEKOWIN_BUILD_GAMEPAD_INFO)
+    include(cmake/gpdinfo.cmake)
 endif()
 
 if(NEKOWIN_BUILD_GLAPP)

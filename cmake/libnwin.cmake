@@ -10,6 +10,7 @@ set(LIBNWIN_HEADERS
     include/input.h
     include/nekodll.h
     include/nwin.h 
+    include/gamepad.h
 )
 
 set(LIBNWIN_SOURCES
@@ -20,8 +21,9 @@ set(LIBNWIN_SOURCES
 # Add platform specific sources
 if(WIN32)
     list(APPEND LIBNWIN_SOURCES 
-        src/win32_window.c
-        src/win32_translation.c)
+        src/win32_gamepad.c
+        src/win32_translation.c
+        src/win32_window.c)
 
     list(APPEND LIBNWIN_HEADERS
         include/win32_translation.h)
@@ -80,6 +82,8 @@ if(NEKOWIN_BUILD_STATIC_LIB)
             PUBLIC vulkan-1
             PUBLIC gdi32
             PUBLIC kernel32
+            PUBLIC Xinput
+            PUBLIC Winmm
         )
 		
 		if(NOT VULKAN_SDK_PATH STREQUAL "")
@@ -126,6 +130,8 @@ if(NEKOWIN_BUILD_SHARED_LIB)
             PUBLIC vulkan-1
             PUBLIC gdi32
             PUBLIC kernel32
+            PUBLIC Xinput
+            PUBLIC Winmm
         )
 		
 		if(NOT VULKAN_SDK_PATH STREQUAL "")
