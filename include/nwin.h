@@ -43,6 +43,7 @@ typedef uint16_t neko_Hint;
 
 /// Platform specific includes, structures and definitions
 #if defined(_WIN32)
+    #include <windows.h>
     #include <windowsx.h>
     #include <vulkan/vulkan_win32.h>
 
@@ -58,7 +59,6 @@ typedef uint16_t neko_Hint;
     #define WGL_CONTEXT_PROFILE_MASK_ARB            0x9126
 
     typedef struct _neko_NativeWindowWin32 {
-        HINSTANCE instance;
         HWND handle;
         MSG message;
         RAWINPUTDEVICE rids[2];
@@ -68,6 +68,7 @@ typedef uint16_t neko_Hint;
     } neko_NativeWindowWin32;
 
     #ifdef WIN32_WINDOW_C
+        #include "win32_translation.h"
         typedef struct _neko_Cursors {
             HCURSOR standard;
             HCURSOR waiting;
@@ -75,8 +76,6 @@ typedef uint16_t neko_Hint;
             HCURSOR hidden;
         } _neko_Cursors;
 
-
-        volatile sig_atomic_t __is_running;
 
         /// wgl function pointer type defintions
         typedef HGLRC(WINAPI* PFN_wglCreateContext)(HDC);
@@ -121,8 +120,9 @@ typedef uint16_t neko_Hint;
             BOOL    ARB_context_flush_control;
         } WGL;
 
-        struct {
+        static struct {
             bool is_init;
+            ATOM main_class;
             HINSTANCE instance;
             WGL wgl;
             _neko_Cursors cursors;
@@ -131,6 +131,7 @@ typedef uint16_t neko_Hint;
 
     #define __NEKO_CLASS_NAME           "NWIN"
     #define __NEKO_WGL_PF_ATTRIB_C      40
+
 #elif defined(__linux__)
     // X11 includes
     #include <X11/X.h>
@@ -196,7 +197,7 @@ typedef uint16_t neko_Hint;
         typedef int(*PFN_glXSwapIntervalMESA)(unsigned int);
 
         /// Structure for containing all API specific information 
-        struct {
+        static struct {
             bool is_init;
             Display *display;
             _neko_X11Atoms atoms;
@@ -261,8 +262,8 @@ typedef struct neko_Window {
     // Win32 implementation specific functions
     static LRESULT CALLBACK _neko_Win32MessageHandler(HWND _hwnd, UINT _msg, WPARAM _param, LPARAM _lparam);
     static DWORD _neko_HandleSizeHints(neko_Window *_win);
+    static void _neko_HandleMouseMovement(neko_Window* _win, POINT _pt);
     static void _neko_CreateGLContext(neko_Window *_win);
-    static void _neko_ZeroValueErrorHandler(ULONG _val, ULONG _line, const char* _err_msg);
 #endif
 
 
@@ -333,10 +334,6 @@ LIBNWIN_API void neko_SetMouseCursorMode(neko_Window *_win, neko_CursorMode _cur
 
 /// Force mouse cursor to certain location on window
 LIBNWIN_API void neko_SetMouseCoords(neko_Window *_win, uint64_t _x, uint64_t _y);
-
-
-/// Synchronise mouse position in neko_Window
-LIBNWIN_API void neko_UpdateMousePos(neko_Window *_win);
 
 
 /// Acquire all required Vulkan extension strings

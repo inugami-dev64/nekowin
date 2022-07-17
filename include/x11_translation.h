@@ -6,10 +6,6 @@
 #ifndef X11_TRANSLATION_H
 #define X11_TRANSLATION_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef X11_TRANSLATION_C
     #include <X11/X.h>
     #include <X11/keysym.h>
@@ -23,8 +19,5 @@ extern "C" {
 neko_HidEvent _neko_TranslateKeyX11(KeySym _key);
 neko_HidEvent _neko_TranslateMouseBtnX11(uint32_t _btn);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -489,16 +489,6 @@ void neko_SetMouseCoords (
 }
 
 
-void neko_UpdateMousePos(neko_Window *_win) {
-    // dummy variables for x11
-    Window return_window;
-    int win_x, win_y, x, y;
-    unsigned int mask;
-    XQueryPointer(_neko_API.display, _win->x11.window, &return_window, &return_window, &win_x, &win_y, &x, &y, &mask);
-    _neko_HandleMouseMovement(_win, x, y);
-}
-
-
 char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
     static char lexts[3][32] = { 0 };
     static char *exts[3] = { lexts[0], lexts[1], lexts[2] };

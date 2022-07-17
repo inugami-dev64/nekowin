@@ -19,8 +19,12 @@ set(LIBNWIN_SOURCES
 
 # Add platform specific sources
 if(WIN32)
-    list(APPEND LIBNWIN_SOURCES src/win32_window.c)
-    message(FATAL_ERROR "Nekowin unicode does not support windows")
+    list(APPEND LIBNWIN_SOURCES 
+        src/win32_window.c
+        src/win32_translation.c)
+
+    list(APPEND LIBNWIN_HEADERS
+        include/win32_translation.h)
 elseif(UNIX AND NOT APPLE)
     list(APPEND LIBNWIN_HEADERS
         include/x11_translation.h
