@@ -7,17 +7,44 @@
 #define GAMEPAD_H
 
 // universal includes
-#if defined(WIN32_GAMEPAD_C) || defined(X11_GAMEPAD_C)
+#if defined(WIN32_GAMEPAD_C) || defined(LINUX_GAMEPAD_C)
 	#include <stdint.h>
 	#include <stdbool.h>
 	#include "nekodll.h"
+
+	// callibration range struct
+	typedef struct _ClbRange {
+		int32_t min;
+		int32_t max;
+	} ClbRange;
 #endif
 
 // platform specific includes and functions
 #if defined(WIN32_GAMEPAD_C)
 	#include <Windows.h>
 	#include <Xinput.h>
-#elif defined(X11_GAMEPAD_C)
+#elif defined(LINUX_GAMEPAD_C)
+	#include <sys/ioctl.h>
+	#include <linux/input.h>
+	#include <unistd.h>
+	#include <dirent.h>
+	#include <fcntl.h>
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <string.h>
+
+	// forward decl for neko_Gamepad
+	typedef struct _neko_Gamepad neko_Gamepad;
+
+	static void _neko_CheckIfCompleteConfig(uint32_t _id);
+	static void _neko_InitDefaultCallibration(uint32_t _id);
+	static void _neko_HandleAxisEvent(neko_Gamepad *_gamepad, struct input_event *_e, uint32_t _id);
+	static void _neko_HandleKeyEvent(neko_Gamepad *_gamepad, struct input_event *_e);
+	static bool _neko_OpenGamepadDevice(const char *_path, uint32_t _id);
+#endif
+
+#if defined(X11_WINDOW_C) || defined(LINUX_GAMEPAD_C)
+	void _neko_CloseGamepads();
 #endif
 
 // bitwise values for gamepad buttons
@@ -54,10 +81,6 @@ typedef struct _neko_Gamepad {
 	uint16_t vibration_right;
 } neko_Gamepad;
 
-typedef struct _neko_GamepadInfo {
-	const char *description;
-
-} neko_GamepadInfo;
 
 LIBNWIN_API uint32_t neko_GetConnectedControllerCount();
 LIBNWIN_API const char* neko_GetControllerName(uint32_t _id);

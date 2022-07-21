@@ -33,6 +33,7 @@ elseif(UNIX AND NOT APPLE)
         include/xkb_unicode.h)
 
     list(APPEND LIBNWIN_SOURCES 
+        src/linux_gamepad.c
         src/x11_translation.c
         src/x11_window.c
         src/xkb_unicode.c)
