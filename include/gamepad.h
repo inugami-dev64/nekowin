@@ -29,6 +29,7 @@
 	#include <unistd.h>
 	#include <dirent.h>
 	#include <fcntl.h>
+	#include <errno.h>
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
@@ -85,6 +86,6 @@ typedef struct _neko_Gamepad {
 LIBNWIN_API uint32_t neko_GetConnectedControllerCount();
 LIBNWIN_API const char* neko_GetControllerName(uint32_t _id);
 LIBNWIN_API void neko_UpdateController(uint32_t _id, neko_Gamepad *_gamepad);
-
+LIBNWIN_API bool neko_CheckGamepadDisconnect(uint32_t _id);
 
 #endif

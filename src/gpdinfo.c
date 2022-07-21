@@ -1,20 +1,47 @@
 #include <stdio.h>
 #include <nwin.h>
 
-int main(void) {
+#if defined(_WIN32)
+	#include <windows.h>
+#elif defined(__linux__)
+	#include <unistd.h>
+#endif
+
+
+uint32_t PollGamepads() {
+	printf("Waiting for some controllers to be connected...\n");
+	uint32_t count;
+	while(!(count = neko_GetConnectedControllerCount())) {
+#if defined(_WIN32)
+		Sleep(1000);
+#elif defined(__linux__)
+		sleep(1);
+#endif
+	}
+
 	printf("Select one of the following gamepad devices:\n");
 	for (uint32_t i = 0; i < neko_GetConnectedControllerCount(); i++) {
 		printf("%u) %s\n", i + 1, neko_GetControllerName(i));
 	}
 
-	int id;
-	scanf("%d", &id);
+	uint32_t id;
+	scanf("%u", &id);
 	id--;
+	return id;
+}
+
+
+int main(void) {
+	uint32_t id = PollGamepads();
 
 	neko_Gamepad old = { 0 };
 	neko_Gamepad new = { 0 };
 
 	while (true) {
+		if(neko_CheckGamepadDisconnect(id)) {
+			printf("Gamepad %u disconnected, please use another connected device\n", id);
+			id = PollGamepads();
+		}
 		neko_UpdateController(id, &new);
 
 		// A, B, X, Y

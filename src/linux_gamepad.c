@@ -327,4 +327,26 @@ void neko_UpdateController(uint32_t _id, neko_Gamepad *_gamepad) {
                 break;
         }
     }
+
+    // error device not found
+    if(errno == ENODEV) {
+        device_fds[_id] = 0;
+    }
+}
+
+
+bool neko_CheckGamepadDisconnect(uint32_t _id) {
+    if(!device_fds[_id]) {
+        memset(&ctrltbls[_id], 0, sizeof(ctrltbls[_id]));
+        memset(&clbvars[_id], 0, sizeof(clbvars[_id]));
+
+        if(_id != NUM_DEVICES - 1) {
+            memmove(device_fds + _id, device_fds + _id + 1, (NUM_DEVICES - _id - 1) * sizeof(int));
+            memmove(ctrltbls + _id, ctrltbls + _id + 1, (NUM_DEVICES - _id - 1) * sizeof(ctrltbls[0]));
+            memmove(clbvars + _id, clbvars + _id + 1, (NUM_DEVICES - _id - 1) * sizeof(clbvars[0]));
+        }
+        return true;
+    }
+
+    return false;
 }
