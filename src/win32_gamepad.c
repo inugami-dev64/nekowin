@@ -86,3 +86,10 @@ void neko_UpdateController(uint32_t _id, neko_Gamepad *_gamepad) {
 	_gamepad->right_thumb.x = (int16_t) state.Gamepad.sThumbRX;
 	_gamepad->right_thumb.y = (int16_t) state.Gamepad.sThumbRY;
 }
+
+
+bool neko_CheckGamepadDisconnect(uint32_t _id) {
+	XINPUT_STATE state = { 0 };
+	const DWORD res = XInputGetState((DWORD) _id, &state);
+	return res == ERROR_DEVICE_NOT_CONNECTED;
+}
