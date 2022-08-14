@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define WIN32_TRANSLATION_C
-#include "win32_translation.h"
+#include "nwin/win32_translation.h"
 
 neko_HidEvent _neko_TranslateWin32Key(WPARAM _key) {
     switch (_key) {

@@ -5,7 +5,7 @@
 
 
 #define XKB_UNICODE_C
-#include <xkb_unicode.h>
+#include "nwin/xkb_unicode.h"
 
 //   translation table for unicode characters
 static const struct {

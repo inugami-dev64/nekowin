@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define INPUT_C
-#include <input.h>
+#include "nwin/input.h"
 
 
 /// Register new input event to input table

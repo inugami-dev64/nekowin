@@ -5,7 +5,7 @@
 #include <csignal>
 
 #include <vulkan/vulkan.h>
-#include "nwin.h"
+#include "nwin/nwin.h"
 #define _LOG_SIZE   512
 
 

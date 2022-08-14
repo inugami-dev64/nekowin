@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define LINUX_GAMEPAD_C
-#include "gamepad.h"
+#include "nwin/gamepad.h"
 
 #define NUM_DEVICES 32
 #define NAME_MAX 1024

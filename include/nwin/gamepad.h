@@ -10,7 +10,7 @@
 #if defined(WIN32_GAMEPAD_C) || defined(LINUX_GAMEPAD_C)
 	#include <stdint.h>
 	#include <stdbool.h>
-	#include "nekodll.h"
+	#include "nwin/nekodll.h"
 
 	// callibration range struct
 	typedef struct _ClbRange {

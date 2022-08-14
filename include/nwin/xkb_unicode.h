@@ -8,11 +8,12 @@
 #define XKB_UNICODE_H
 
 #ifdef XKB_UNICODE_C
-    #include <nekodll.h>
     #include <X11/X.h>
     #include <stdint.h>
     #include <stddef.h>
     #include <stdbool.h>
+
+    #include "nwin/nekodll.h"
 #endif
 
 LIBNWIN_API uint16_t _neko_KeysymToUnicode(KeySym _key);

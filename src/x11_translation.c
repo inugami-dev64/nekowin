@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define X11_TRANSLATION_C
-#include <x11_translation.h>
+#include "nwin/x11_translation.h"
 
 neko_HidEvent _neko_TranslateKeyX11(KeySym _sym) {
     switch (_sym) {   

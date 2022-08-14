@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <nekodll.h>
-#include <glad/glad.h>
+#include "nwin/nekodll.h"
+#include "nwin/glad/glad.h"
 
 static void* get_proc(const char *namez);
 

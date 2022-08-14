@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define X11_WINDOW_C
-#include <nwin.h>
+#include "nwin/nwin.h"
 
 /*****************************/
 /****** Inner functions ******/

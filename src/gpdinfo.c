@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <nwin.h>
+#include "nwin/nwin.h"
 
 #if defined(_WIN32)
 	#include <windows.h>

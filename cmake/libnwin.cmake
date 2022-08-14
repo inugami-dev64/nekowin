@@ -7,10 +7,10 @@ set(LIBNWIN_STATIC_TARGET nwin-static)
 set(LIBNWIN_SHARED_TARGET nwin-shared)
 
 set(LIBNWIN_HEADERS
-    include/input.h
-    include/nekodll.h
-    include/nwin.h 
-    include/gamepad.h
+    include/nwin/input.h
+    include/nwin/nekodll.h
+    include/nwin/nwin.h 
+    include/nwin/gamepad.h
 )
 
 set(LIBNWIN_SOURCES
@@ -26,11 +26,11 @@ if(WIN32)
         src/win32_window.c)
 
     list(APPEND LIBNWIN_HEADERS
-        include/win32_translation.h)
+        include/nwin/win32_translation.h)
 elseif(UNIX AND NOT APPLE)
     list(APPEND LIBNWIN_HEADERS
-        include/x11_translation.h
-        include/xkb_unicode.h)
+        include/nwin/x11_translation.h
+        include/nwin/xkb_unicode.h)
 
     list(APPEND LIBNWIN_SOURCES 
         src/linux_gamepad.c
@@ -54,14 +54,11 @@ if(NEKOWIN_BUILD_STATIC_LIB)
     )
 
     target_include_directories(${LIBNWIN_STATIC_TARGET}
-        PRIVATE include
-        PUBLIC include/third_party
-    )
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
     target_compile_definitions(${LIBNWIN_STATIC_TARGET}
         PRIVATE LIBNWIN_EXPORT_LIBRARY
-        PUBLIC LIBNWIN_STATIC
-    )
+        PUBLIC LIBNWIN_STATIC)
 
     # OS dependent dependencies
     if(UNIX)
@@ -103,13 +100,10 @@ if(NEKOWIN_BUILD_SHARED_LIB)
     )
 
     target_include_directories(${LIBNWIN_SHARED_TARGET}
-        PRIVATE include
-        PUBLIC include/third_party
-    )
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
     target_compile_definitions(${LIBNWIN_SHARED_TARGET}
-        PRIVATE LIBNWIN_EXPORT_LIBRARY
-    )
+        PRIVATE LIBNWIN_EXPORT_LIBRARY)
 
     # OS dependent dependencies
     if(UNIX)

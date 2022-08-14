@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define WIN32_GAMEPAD_C
-#include "gamepad.h"
+#include "nwin/gamepad.h"
 
 
 uint32_t neko_GetConnectedControllerCount() {

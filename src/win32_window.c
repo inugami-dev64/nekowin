@@ -4,7 +4,7 @@
 /// author: Karl-Mihkel Ott
 
 #define WIN32_WINDOW_C
-#include <nwin.h>
+#include "nwin/nwin.h"
 
 #define WIN32_CLASS_NAME L"NWIN100"
 static neko_Window* _active_window = NULL;

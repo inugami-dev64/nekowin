@@ -11,7 +11,6 @@ extern "C" {
 #endif
 
 #if defined(INPUT_C)
-    #include <nekodll.h>
     #include <stdio.h>
     #include <stdlib.h>
     #include <stdarg.h>   
@@ -29,6 +28,8 @@ extern "C" {
     #ifdef _WIN32
         #include <Windows.h>
     #endif
+
+    #include "nwin/nekodll.h"
 #endif
 
 

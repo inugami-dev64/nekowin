@@ -28,10 +28,10 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include <vulkan/vulkan.h>
-#include "nekodll.h"
-#include "input.h"
-#include "gamepad.h"
-#include "glad/glad.h"
+#include "nwin/nekodll.h"
+#include "nwin/input.h"
+#include "nwin/gamepad.h"
+#include "nwin/glad/glad.h"
 
 // Hint declarations
 typedef uint16_t neko_Hint;
@@ -69,7 +69,7 @@ typedef uint16_t neko_Hint;
     } neko_NativeWindowWin32;
 
     #ifdef WIN32_WINDOW_C
-        #include "win32_translation.h"
+        #include "nwin/win32_translation.h"
         typedef struct _neko_Cursors {
             HCURSOR standard;
             HCURSOR waiting;
@@ -155,8 +155,8 @@ typedef uint16_t neko_Hint;
         #include <X11/Xcursor/Xcursor.h>
         #include <X11/extensions/Xrandr.h>
         #include <vulkan/vulkan_xlib.h>
-        #include "x11_translation.h"
-        #include "xkb_unicode.h"
+        #include "nwin/x11_translation.h"
+        #include "nwin/xkb_unicode.h"
         
         /// Commonly used atoms used in API instance structure
         typedef struct _neko_X11Atoms {
@@ -211,15 +211,6 @@ typedef uint16_t neko_Hint;
         } _neko_API = { 0 };
     #endif
 #endif
-
-// #ifdef __NWIN_C
-//     // Vulkan extension name macros
-//     #define NEKO_VK_WSI_EXT_NAME            "VK_KHR_surface"
-//     #define NEKO_VK_XLIB_SURFACE_EXT_NAME   "VK_KHR_xlib_surface"
-//     #define NEKO_VK_WIN32_SURFACE_EXT_NAME  "VK_KHR_win32_surface"
-//     #define NEKO_VK_DEBUG_UTILS_EXT_NAME    "VK_EXT_debug_utils"
-// #endif
-
 
 #define UC_BUFFER_SIZE 32
 
