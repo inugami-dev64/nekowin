@@ -7,8 +7,6 @@ cmake_minimum_required(VERSION 3.10)
 project(nwin LANGUAGES C CXX)
 
 # Default values and options
-set(CXX_STANDARD C++14)
-set(C_STANDARD C99)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -31,7 +29,7 @@ if(MSVC)
         add_compile_options(/O2)
     endif()
 else()
-    add_compile_options(-Wall -Wextra -std=c++14)
+    add_compile_options(-Wall -Wextra $<$<COMPILE_LANGUAGE:CXX>:-std=c++14> $<$<COMPILE_LANGUAGE:C>:-std=c99>)
 
     if(CMAKE_BUILD_TYPE MATCHES Debug)
         add_compile_options(-O0)
