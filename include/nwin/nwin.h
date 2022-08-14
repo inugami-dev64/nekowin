@@ -265,7 +265,7 @@ typedef struct neko_Window {
 /**************************/
 
 /// Initialise platform dependent backend api for nekowin library
-LIBNWIN_API void neko_InitAPI();
+LIBNWIN_API void neko_InitAPI(const char *_icon);
 
 
 /// Get the initialisation status of the API

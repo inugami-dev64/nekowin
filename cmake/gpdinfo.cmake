@@ -7,8 +7,13 @@ set(GPDINFO_TARGET gpdinfo)
 set(GPDINFO_SOURCES src/gpdinfo.c)
 
 add_executable(${GPDINFO_TARGET} ${GPDINFO_SOURCES})
-add_dependencies(${GPDINFO_TARGET} ${LIBNWIN_SHARED_TARGET})
-target_include_directories(${GPDINFO_TARGET}
-    PRIVATE include)
-target_link_libraries(${GPDINFO_TARGET} 
-    PRIVATE ${LIBNWIN_SHARED_TARGET})
+
+if(NEKOWIN_BUILD_SHARED_LIB)
+	add_dependencies(${GPDINFO_TARGET} ${LIBNWIN_SHARED_TARGET})
+	target_link_libraries(${GPDINFO_TARGET} 
+		PRIVATE ${LIBNWIN_SHARED_TARGET})
+else()
+	add_dependencies(${GPDINFO_TARGET} ${LIBNWIN_STATIC_TARGET})
+	target_link_libraries(${GPDINFO_TARGET}
+		PRIVATE ${LIBNWIN_STATIC_TARGET})
+endif()

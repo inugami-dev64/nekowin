@@ -291,7 +291,7 @@ int main() {
 
     
     // Create a new window
-    neko_InitAPI();
+    neko_InitAPI(NULL);
     neko_Window parent_win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, 0, 0, "GLTest");
     neko_glMakeCurrent(&parent_win);
 

@@ -219,7 +219,7 @@ static void _neko_CreateGLContext(neko_Window *_win) {
 /******* NEKO API CALLS ********/
 /*******************************/
 
-void neko_InitAPI() {
+void neko_InitAPI(const char *_icon) {
     // TODO: Load wgl function pointers
     HINSTANCE opengl = LoadLibraryW(L"opengl32.dll");
     except(opengl, "Failed to open opengl32.dll");
@@ -242,6 +242,15 @@ void neko_InitAPI() {
     class.hInstance = _neko_API.instance;
     class.lpszClassName = WIN32_CLASS_NAME;
     class.hCursor = _neko_API.cursors.standard;
+
+    // check if icon should be added
+    if (_icon) {
+        wchar_t wide_icon[2048] = { 0 };
+        MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, _icon, -1, wide_icon, 2048);
+        HANDLE hicon = LoadImageW(_neko_API.instance, wide_icon, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
+        class.hIcon = (HICON)hicon;
+    }
+
     _neko_API.main_class = RegisterClassExW(&class);
     except(_neko_API.main_class, "Failed to register Win32 class");
 
@@ -274,7 +283,8 @@ neko_Window neko_NewWindow (
     neko_Hint hints,
     int32_t _spawn_x,
     int32_t _spawn_y,
-    const char *_title
+    const char *_title,
+    const char *_icon
 ) {
     neko_Window win = { 0 };
 
@@ -291,9 +301,10 @@ neko_Window neko_NewWindow (
     DWORD window_style = _neko_HandleSizeHints(&win);
     _active_window = &win;
 
-    // Check if the parent window pointer is present
+    // wide title and wide icon
     wchar_t wide_title[2048] = { 0 };
     MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, win.window_title, -1, wide_title, 2048);
+    
     win.win32.handle = CreateWindowExW(0, WIN32_CLASS_NAME, wide_title,
                                        window_style, 
                                        win.oposx, win.oposy,

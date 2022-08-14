@@ -7,5 +7,11 @@ set(GLAPP_TARGET glapp)
 set(GLAPP_SOURCES src/glapp.cpp)
 
 add_executable(${GLAPP_TARGET} ${GLAPP_SOURCES})
-target_include_directories(${GLAPP_TARGET} PRIVATE include)
-target_link_libraries(${GLAPP_TARGET} PRIVATE ${LIBNWIN_SHARED_TARGET})
+
+if(NEKOWIN_BUILD_SHARED_LIB)
+	add_dependencies(${GLAPP_TARGET} ${LIBNWIN_SHARED_TARGET})
+	target_link_libraries(${GLAPP_TARGET} PRIVATE ${LIBNWIN_SHARED_TARGET})
+else()
+	add_dependencies(${GLAPP_TARGET} ${LIBNWIN_STATIC_TARGET})
+	target_link_libraries(${GLAPP_TARGET} PRIVATE ${LIBNWIN_STATIC_TARGET})
+endif()
