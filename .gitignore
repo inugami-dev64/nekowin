@@ -1,7 +1,6 @@
 .cache
 Makefile
 build
-icon
 compile_commands.json
 compile_flags.txt
 .vscode

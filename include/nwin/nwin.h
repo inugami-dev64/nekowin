@@ -151,18 +151,24 @@ typedef uint16_t neko_Hint;
         #include <string.h>
         #include <X11/Xutil.h>
         #include <X11/XKBlib.h>
+        #include <X11/Xatom.h>
         #include <X11/cursorfont.h>
         #include <X11/Xcursor/Xcursor.h>
         #include <X11/extensions/Xrandr.h>
         #include <vulkan/vulkan_xlib.h>
         #include "nwin/x11_translation.h"
         #include "nwin/xkb_unicode.h"
+
+        #define STB_IMAGE_IMPLEMENTATION
+        #include "nwin/stb_image.h"
         
         /// Commonly used atoms used in API instance structure
         typedef struct _neko_X11Atoms {
             Atom WM_DELETE_WINDOW;
             Atom _NET_WM_STATE;
             Atom _NET_WM_STATE_FULLSCREEN;
+            Atom _NET_WM_ICON;
+            Atom CARDINAL;
         } _neko_X11Atoms;
 
         #define EVENT_MASK KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
@@ -203,7 +209,10 @@ typedef uint16_t neko_Hint;
             Display *display;
             _neko_X11Atoms atoms;
             Window root;
+            Pixmap icon_pixmap;
             int32_t scr;
+            uint32_t icon_count;
+            const char **icons;
             _neko_XCursors cursors;
             PFN_glXSwapIntervalEXT glXSwapIntervalEXT;
             PFN_glXSwapIntervalSGI glXSwapIntervalSGI;
@@ -265,7 +274,7 @@ typedef struct neko_Window {
 /**************************/
 
 /// Initialise platform dependent backend api for nekowin library
-LIBNWIN_API void neko_InitAPI(const char *_icon);
+LIBNWIN_API void neko_InitAPI(uint32_t _count, const char **_icons);
 
 
 /// Get the initialisation status of the API

@@ -291,7 +291,12 @@ int main() {
 
     
     // Create a new window
-    neko_InitAPI(NULL);
+    const char *icons[] = {
+        "../icon/32x32.png",
+        "../icon/16x16.png"
+    };
+
+    neko_InitAPI(2, icons);
     neko_Window parent_win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, 0, 0, "GLTest");
     neko_glMakeCurrent(&parent_win);
 

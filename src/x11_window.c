@@ -204,21 +204,26 @@ void _neko_LoadCursors() {
     XFreePixmap(_neko_API.display, pix);
 }
 
+
 /*******************************/
 /******* NEKO API CALLS ********/
 /*******************************/
 
 /// Initialise platform dependent backend api for nekowin library
-void neko_InitAPI() {
+void neko_InitAPI(uint32_t _count, const char **_icons) {
     XInitThreads();
     _neko_API.display = XOpenDisplay(NULL);
     _neko_API.root = DefaultRootWindow(_neko_API.display);
     _neko_API.scr = DefaultScreen(_neko_API.display);
+    _neko_API.icon_count = _count;
+    _neko_API.icons = _icons;
 
     // Get basic atom values
     _neko_API.atoms.WM_DELETE_WINDOW = XInternAtom(_neko_API.display, "WM_DELETE_WINDOW", False);
     _neko_API.atoms._NET_WM_STATE = XInternAtom(_neko_API.display, "_NET_WM_STATE", False);
     _neko_API.atoms._NET_WM_STATE_FULLSCREEN = XInternAtom(_neko_API.display, "_NET_WM_STATE_FULLSCREEN", False);
+    _neko_API.atoms._NET_WM_ICON = XInternAtom(_neko_API.display, "_NET_WM_ICON", False);
+    _neko_API.atoms.CARDINAL = XInternAtom(_neko_API.display, "CARDINAL", False);
 
     _neko_LoadCursors();
 
@@ -321,7 +326,6 @@ neko_Window neko_NewWindow (
     except(win.x11.window, "Failed to create x11 window!");
     XMapWindow(_neko_API.display, win.x11.window);
     XStoreName(_neko_API.display, win.x11.window, win.window_title);
-
     _neko_UpdateWindowSize(&win);
     
     // Set the base WM protocols
@@ -330,6 +334,48 @@ neko_Window neko_NewWindow (
     if(_hints & NEKO_HINT_API_OPENGL)
         win.x11.glc = glXCreateContext(_neko_API.display, win.x11.p_vi, NULL, GL_TRUE);
 
+
+    if(_neko_API.icon_count) {
+        int size = 0;
+        for(uint32_t i = 0; i < _neko_API.icon_count; i++) {
+            int x, y, n;
+            if(!stbi_info(_neko_API.icons[i], &x, &y, &n)) {
+                fprintf(stderr, "Failed to open icon file: %s\n", _neko_API.icons[i]);
+                exit(1);
+            }
+
+            size += 2 + x * y;
+        }
+
+        uint32_t *icon = calloc(size, sizeof(uint32_t));
+        uint32_t *ptr = icon;
+
+        for(uint32_t i = 0; i < _neko_API.icon_count; i++) {
+            FILE *f = fopen(_neko_API.icons[i], "rb");
+            int x, y, c;
+            unsigned char *buf = stbi_load_from_file(f, &x, &y, &c, 4);
+
+            *ptr++ = x;
+            *ptr++ = y;
+
+            for(int i = 0; i < x * y; i++) {
+                *ptr++ = (((uint32_t) buf[i * 4 + 0]) << 16) |
+                         (((uint32_t) buf[i * 4 + 1]) <<  8) | 
+                         (((uint32_t) buf[i * 4 + 2]) <<  0) |
+                         (((uint32_t) buf[i * 4 + 3]) << 24);
+            }
+            free(buf);
+        }
+
+            
+        XChangeProperty(_neko_API.display, win.x11.window,
+                        _neko_API.atoms._NET_WM_ICON,
+                        XA_CARDINAL, 32,
+                        PropModeReplace,
+                        (unsigned char*) icon,
+                        size);
+        free(icon);
+    }
     win.is_running = true;
     XFlush(_neko_API.display);
     return win;
