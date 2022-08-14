@@ -16,7 +16,6 @@ option(NEKOWIN_BUILD_GAMEPAD_INFO "Build a sample console application for testin
 option(NEKOWIN_BUILD_STATIC_LIB "Build nekowin as a static library" ON)
 option(NEKOWIN_BUILD_SHARED_LIB "Build nekowin as a shared library" ON)
 
-include(cmake/libnwin.cmake)
 
 # Set appropriate compiler flags
 if(MSVC)
@@ -37,6 +36,8 @@ else()
         add_compile_options(-O3)
     endif()
 endif()
+
+include(cmake/libnwin.cmake)
 
 if(NEKOWIN_BUILD_GAMEPAD_INFO)
     include(cmake/gpdinfo.cmake)

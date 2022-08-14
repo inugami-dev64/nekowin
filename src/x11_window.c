@@ -3,7 +3,6 @@
 /// file: x11_surface.c - x11 window / surface creation handler source file
 /// author: Karl-Mihkel Ott
 
-#include <X11/Xlib.h>
 #define X11_WINDOW_C
 #include <nwin.h>
 
@@ -231,7 +230,6 @@ void neko_InitAPI() {
     const char* extensions = glXQueryExtensionsString(_neko_API.display, _neko_API.scr);
 
     // Check if any swap interval function pointers are present
-    bool ext_found = false;
     const char* ptr = extensions;
     const char* pt = NULL;
     while ((pt = strchr(ptr, ' ')) && ptr != (const char*)1) {

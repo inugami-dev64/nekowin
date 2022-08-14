@@ -7,6 +7,7 @@
 #include "gamepad.h"
 
 #define NUM_DEVICES 32
+#define NAME_MAX 1024
 #define NUM_EVENTS 8
 #define ISBITSET(bit, bytes) ((bytes[(bit) / 8]) & (1 << (bit % 8)))
 
@@ -42,7 +43,6 @@ static struct {
 // NOTE: according to wikipedia file descriptor 0 means STDIN_FILENO
 // Here it is used as a termination number for iterating through device_fds
 static int device_fds[NUM_DEVICES] = { 0 };
-static int used_fds = 0;
 
 
 static void _neko_CheckIfCompleteConfig(uint32_t _id) {
@@ -68,7 +68,7 @@ static void _neko_CheckIfCompleteConfig(uint32_t _id) {
     //   Left bumper: BTN_TL
     //   Right bumper: BTN_TR
     //   Back button: BTN_SELECT
-    //   Start button: BTN_START
+    //   Start butto: BTN_START
     //   Left stick: BTN_THUMBL
     //   Right stick: BTN_THUMBR
     // That is 10 key events in total
@@ -260,7 +260,6 @@ static bool _neko_OpenGamepadDevice(const char *_path, uint32_t _id) {
     }
 
     // check how many axes (or hats) are present on the controller device
-    uint32_t axesc = 0;
     for(int cde = ABS_X; cde < ABS_CNT; cde++) {
         if(!ISBITSET(cde, abs_bits))
             continue;
