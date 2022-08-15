@@ -208,7 +208,6 @@ typedef uint16_t neko_Hint;
             Display *display;
             _neko_X11Atoms atoms;
             Window root;
-            Pixmap icon_pixmap;
             int32_t scr;
             _neko_XCursors cursors;
             PFN_glXSwapIntervalEXT glXSwapIntervalEXT;
@@ -259,7 +258,7 @@ typedef struct neko_Window {
 #elif defined(WIN32_WINDOW_C)
     // Win32 implementation specific functions
     static LRESULT CALLBACK _neko_Win32MessageHandler(HWND _hwnd, UINT _msg, WPARAM _param, LPARAM _lparam);
-    static bool _neko_CheckFunctionKey(WPARAM _key);
+    static HICON _neko_CreateIcon(const neko_Icon* _icon);
     static DWORD _neko_HandleSizeHints(neko_Window *_win);
     static void _neko_HandleMouseMovement(neko_Window* _win, POINT _pt);
     static void _neko_CreateGLContext(neko_Window *_win);
@@ -294,8 +293,8 @@ LIBNWIN_API void neko_DeinitAPI();
  */
 LIBNWIN_API neko_Window neko_NewWindow(
     int32_t _width, 
-    int32_t _height, 
-    neko_Hint _hints, 
+    int32_t _height,
+    neko_Hint _hints,
     int32_t _spawn_x,
     int32_t _spawn_y,
     const char *_title

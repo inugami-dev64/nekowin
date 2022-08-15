@@ -7,6 +7,7 @@ set(LIBNWIN_STATIC_TARGET nwin-static)
 set(LIBNWIN_SHARED_TARGET nwin-shared)
 
 set(LIBNWIN_HEADERS
+    include/nwin/icon.h
     include/nwin/input.h
     include/nwin/nekodll.h
     include/nwin/nwin.h 

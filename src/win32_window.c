@@ -130,6 +130,49 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(
 }
 
 
+static HICON _neko_CreateIcon(const neko_Icon* _icon) {
+    BITMAPV5HEADER bmp_header;
+    ZeroMemory(&bmp_header, sizeof(bmp_header));
+    bmp_header.bV5Size = sizeof(bmp_header);
+    bmp_header.bV5Width = _icon->width;
+    bmp_header.bV5Height = _icon->height;
+    bmp_header.bV5Planes = 1;
+    bmp_header.bV5BitCount = 32;
+    bmp_header.bV5Compression = BI_BITFIELDS;
+    bmp_header.bV5RedMask = 0x000000ff;
+    bmp_header.bV5GreenMask = 0x0000ff00;
+    bmp_header.bV5BlueMask = 0x00ff0000;
+    bmp_header.bV5AlphaMask = 0xff000000;
+
+    HDC dc = GetDC(NULL);
+    HBITMAP color = CreateBitmap(_icon->width, _icon->height, 1, 32, (void*)_icon->pixels);
+    ReleaseDC(NULL, dc);
+
+    if (!color) {
+        fprintf(stderr, "Failed to create ARGB bitmap\n");
+        exit(1);
+    }
+
+    HBITMAP mask = CreateBitmap(_icon->width, _icon->height, 1, 1, NULL);
+    if (!mask) {
+        fprintf(stderr, "Failed to create mask bitmap\n");
+        DeleteObject(color);
+        exit(1);
+    }
+    
+    ICONINFO icon_info;
+    ZeroMemory(&icon_info, sizeof(icon_info));
+    icon_info.fIcon = TRUE;
+    icon_info.hbmMask = mask;
+    icon_info.hbmColor = color;
+
+    HICON icon = CreateIconIndirect(&icon_info);
+    DeleteObject(color);
+    DeleteObject(mask);
+
+    return icon;
+}
+
 
 static DWORD _neko_HandleSizeHints(neko_Window *_win) {
     DWORD hints = 0;
@@ -219,7 +262,7 @@ static void _neko_CreateGLContext(neko_Window *_win) {
 /******* NEKO API CALLS ********/
 /*******************************/
 
-void neko_InitAPI(const char *_icon) {
+void neko_InitAPI() {
     // TODO: Load wgl function pointers
     HINSTANCE opengl = LoadLibraryW(L"opengl32.dll");
     except(opengl, "Failed to open opengl32.dll");
@@ -242,14 +285,6 @@ void neko_InitAPI(const char *_icon) {
     class.hInstance = _neko_API.instance;
     class.lpszClassName = WIN32_CLASS_NAME;
     class.hCursor = _neko_API.cursors.standard;
-
-    // check if icon should be added
-    if (_icon) {
-        wchar_t wide_icon[2048] = { 0 };
-        MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, _icon, -1, wide_icon, 2048);
-        HANDLE hicon = LoadImageW(_neko_API.instance, wide_icon, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
-        class.hIcon = (HICON)hicon;
-    }
 
     _neko_API.main_class = RegisterClassExW(&class);
     except(_neko_API.main_class, "Failed to register Win32 class");
@@ -320,24 +355,46 @@ neko_Window neko_NewWindow (
     win.cwidth = (int32_t) (rect.right - rect.left);
     win.cheight = (int32_t) (rect.bottom - rect.top);
 
-    // win.win32.rids[0].usUsagePage = 0x01;
-    // win.win32.rids[0].usUsage = 0x02;
-    // win.win32.rids[0].dwFlags = 0;
-    // win.win32.rids[0].hwndTarget = win.win32.handle;
-
-    // win.win32.rids[1].usUsagePage = 0x01;
-    // win.win32.rids[1].usUsage = 0x06;
-    // win.win32.rids[1].dwFlags = 0;
-    // win.win32.rids[1].hwndTarget = win.win32.handle;
-
-    // BOOL rid_stat = RegisterRawInputDevices(win.win32.rids, 2, sizeof(win.win32.rids[0]));
-    // _neko_ZeroValueErrorHandler((ULONG) rid_stat, (ULONG) __LINE__, "Failed to register raw input devices");
-
     win.is_running = true;
     _active_window = &win;
     ShowWindow(win.win32.handle, SW_NORMAL);
     _active_window = NULL;
     return win;
+}
+
+
+void neko_SetIcons(neko_Window* _win, uint32_t _count, neko_Icon* _icons) {
+    HICON small_hicon, big_hicon;
+    _active_window = _win;
+    if (_count) {
+        int32_t big_icon_area = GetSystemMetrics(SM_CXICON) * GetSystemMetrics(SM_CYICON);
+        int32_t small_icon_area = GetSystemMetrics(SM_CXSMICON) * GetSystemMetrics(SM_CYSMICON);
+
+        neko_Icon *small_ico = _icons, *big_ico = _icons;
+
+        // find the closest icons representing big and small icons
+        for (uint32_t i = 0; i < _count; i++) {
+            const int32_t cur_area = _icons[i].width * _icons[i].height;
+            const int32_t cur_small_area = small_ico->width * small_ico->height;
+            const int32_t cur_big_area = big_ico->width * big_ico->height;
+
+            if (abs(cur_area - small_icon_area) < abs(cur_small_area - small_icon_area))
+                small_ico = &_icons[i];
+
+            if (abs(cur_area - big_icon_area) < abs(cur_area - big_icon_area))
+                big_ico = &_icons[i];
+        }
+
+        small_hicon = _neko_CreateIcon(small_ico);
+        big_hicon = _neko_CreateIcon(big_ico);
+    } else {
+        small_hicon = (HICON)GetClassLongPtrW(_win->win32.handle, GCLP_HICON);
+        big_hicon = (HICON)GetClassLongPtrW(_win->win32.handle, GCLP_HICONSM);
+    }
+
+    SendMessageW(_win->win32.handle, WM_SETICON, ICON_SMALL, (LPARAM)small_hicon);
+    SendMessageW(_win->win32.handle, WM_SETICON, ICON_BIG, (LPARAM)big_hicon);
+    _active_window = NULL;
 }
 
 
