@@ -210,20 +210,18 @@ void _neko_LoadCursors() {
 /*******************************/
 
 /// Initialise platform dependent backend api for nekowin library
-void neko_InitAPI(uint32_t _count, const char **_icons) {
+void neko_InitAPI() {
     XInitThreads();
     _neko_API.display = XOpenDisplay(NULL);
     _neko_API.root = DefaultRootWindow(_neko_API.display);
     _neko_API.scr = DefaultScreen(_neko_API.display);
-    _neko_API.icon_count = _count;
-    _neko_API.icons = _icons;
 
     // Get basic atom values
     _neko_API.atoms.WM_DELETE_WINDOW = XInternAtom(_neko_API.display, "WM_DELETE_WINDOW", False);
     _neko_API.atoms._NET_WM_STATE = XInternAtom(_neko_API.display, "_NET_WM_STATE", False);
     _neko_API.atoms._NET_WM_STATE_FULLSCREEN = XInternAtom(_neko_API.display, "_NET_WM_STATE_FULLSCREEN", False);
     _neko_API.atoms._NET_WM_ICON = XInternAtom(_neko_API.display, "_NET_WM_ICON", False);
-    _neko_API.atoms.CARDINAL = XInternAtom(_neko_API.display, "CARDINAL", False);
+    _neko_API.atoms._NET_WM_PID = XInternAtom(_neko_API.display, "_NET_WM_PID", False);
 
     _neko_LoadCursors();
 
@@ -327,58 +325,80 @@ neko_Window neko_NewWindow (
     XMapWindow(_neko_API.display, win.x11.window);
     XStoreName(_neko_API.display, win.x11.window, win.window_title);
     _neko_UpdateWindowSize(&win);
+    win.is_running = true;
     
     // Set the base WM protocols
-    XSetWMProtocols(_neko_API.display, win.x11.window, &_neko_API.atoms.WM_DELETE_WINDOW, True);
+    {
+        XSetWMProtocols(_neko_API.display, win.x11.window, &_neko_API.atoms.WM_DELETE_WINDOW, True);
+        XFlush(_neko_API.display);
+    }
+
+    // set pid
+    {
+        const long pid = getpid();
+        XChangeProperty(_neko_API.display, win.x11.window,
+                        _neko_API.atoms._NET_WM_PID, XA_CARDINAL, 32,
+                        PropModeReplace,
+                        (unsigned char*) &pid, 1);
+    }
+
+    // WM_HINTS
+    {
+        XWMHints *hints = XAllocWMHints();
+        if(!hints) {
+            fprintf(stderr, "X11: Failed to allocate WM hints");
+            exit(1);
+        }
+
+        hints->flags = StateHint;
+        hints->initial_state = NormalState;
+
+        XSetWMHints(_neko_API.display, win.x11.window, hints);
+        XFree(hints);
+    }
+
 
     if(_hints & NEKO_HINT_API_OPENGL)
         win.x11.glc = glXCreateContext(_neko_API.display, win.x11.p_vi, NULL, GL_TRUE);
 
+    return win;
+}
 
-    if(_neko_API.icon_count) {
-        int size = 0;
-        for(uint32_t i = 0; i < _neko_API.icon_count; i++) {
-            int x, y, n;
-            if(!stbi_info(_neko_API.icons[i], &x, &y, &n)) {
-                fprintf(stderr, "Failed to open icon file: %s\n", _neko_API.icons[i]);
-                exit(1);
-            }
 
-            size += 2 + x * y;
+void neko_SetIcons(neko_Window *_win, uint32_t _count, neko_Icon *_icons) {
+    if(_count) {
+        int32_t size = 0;
+        for(uint32_t i = 0; i < _count; i++) {
+            size += 2 + _icons[i].width * _icons[i].height;
         }
 
-        uint32_t *icon = calloc(size, sizeof(uint32_t));
-        uint32_t *ptr = icon;
+        unsigned long *icon = (unsigned long*) calloc(size, sizeof(unsigned long));
+        unsigned long *ptr = icon;
 
-        for(uint32_t i = 0; i < _neko_API.icon_count; i++) {
-            FILE *f = fopen(_neko_API.icons[i], "rb");
-            int x, y, c;
-            unsigned char *buf = stbi_load_from_file(f, &x, &y, &c, 4);
+        for(uint32_t i = 0; i < _count; i++) {
+            *ptr++ = _icons[i].width;
+            *ptr++ = _icons[i].height;
 
-            *ptr++ = x;
-            *ptr++ = y;
-
-            for(int i = 0; i < x * y; i++) {
-                *ptr++ = (((uint32_t) buf[i * 4 + 0]) << 16) |
-                         (((uint32_t) buf[i * 4 + 1]) <<  8) | 
-                         (((uint32_t) buf[i * 4 + 2]) <<  0) |
-                         (((uint32_t) buf[i * 4 + 3]) << 24);
+            for(int32_t j = 0; j < _icons[i].width * _icons[i].height; j++) {
+                *ptr++ = (((unsigned long) _icons[i].pixels[j * 4 + 0]) << 16) |
+                         (((unsigned long) _icons[i].pixels[j * 4 + 1]) <<  8) |
+                         (((unsigned long) _icons[i].pixels[j * 4 + 2]) <<  0) |
+                         (((unsigned long) _icons[i].pixels[j * 4 + 3]) << 24);
             }
-            free(buf);
         }
 
-            
-        XChangeProperty(_neko_API.display, win.x11.window,
+        XChangeProperty(_neko_API.display, _win->x11.window,
                         _neko_API.atoms._NET_WM_ICON,
                         XA_CARDINAL, 32,
                         PropModeReplace,
                         (unsigned char*) icon,
                         size);
         free(icon);
+    } else {
+        XDeleteProperty(_neko_API.display, _win->x11.window, _neko_API.atoms._NET_WM_ICON);
     }
-    win.is_running = true;
+
     XFlush(_neko_API.display);
-    return win;
 }
 
 

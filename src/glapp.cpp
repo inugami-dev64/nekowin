@@ -5,6 +5,9 @@
 #include <csignal>
 
 #include <vulkan/vulkan.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "nwin/stb_image.h"
 #include "nwin/nwin.h"
 #define _LOG_SIZE   512
 
@@ -291,12 +294,7 @@ int main() {
 
     
     // Create a new window
-    const char *icons[] = {
-        "../icon/32x32.png",
-        "../icon/16x16.png"
-    };
-
-    neko_InitAPI(2, icons);
+    neko_InitAPI();
     neko_Window parent_win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, 0, 0, "GLTest");
     neko_glMakeCurrent(&parent_win);
 
@@ -306,12 +304,19 @@ int main() {
         std::exit(-1);
     }
 
+    neko_Icon icons[2];
+    icons[0].pixels = stbi_load("../icon/32x32.png", &icons[0].width, &icons[0].height, 0, 4);
+    icons[1].pixels = stbi_load("../icon/16x16/png", &icons[0].width, &icons[0].height, 0, 4);
+
+    neko_SetIcons(&parent_win, 2, icons);
+    free(icons[0].pixels);
+    free(icons[1].pixels);
+
     neko_SetMouseCursorMode(&parent_win, NEKO_CURSOR_MODE_STANDARD);
     compile_shaders();
     create_buffer_handles();
     run(parent_win);
     cleanup(parent_win);
-
 
     return 0;
 }

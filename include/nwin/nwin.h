@@ -30,6 +30,7 @@ extern "C" {
 #include <vulkan/vulkan.h>
 #include "nwin/nekodll.h"
 #include "nwin/input.h"
+#include "nwin/icon.h"
 #include "nwin/gamepad.h"
 #include "nwin/glad/glad.h"
 
@@ -149,6 +150,7 @@ typedef uint16_t neko_Hint;
 
     #ifdef X11_WINDOW_C
         #include <string.h>
+        #include <unistd.h>
         #include <X11/Xutil.h>
         #include <X11/XKBlib.h>
         #include <X11/Xatom.h>
@@ -158,9 +160,6 @@ typedef uint16_t neko_Hint;
         #include <vulkan/vulkan_xlib.h>
         #include "nwin/x11_translation.h"
         #include "nwin/xkb_unicode.h"
-
-        #define STB_IMAGE_IMPLEMENTATION
-        #include "nwin/stb_image.h"
         
         /// Commonly used atoms used in API instance structure
         typedef struct _neko_X11Atoms {
@@ -168,7 +167,7 @@ typedef uint16_t neko_Hint;
             Atom _NET_WM_STATE;
             Atom _NET_WM_STATE_FULLSCREEN;
             Atom _NET_WM_ICON;
-            Atom CARDINAL;
+            Atom _NET_WM_PID;
         } _neko_X11Atoms;
 
         #define EVENT_MASK KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
@@ -211,8 +210,6 @@ typedef uint16_t neko_Hint;
             Window root;
             Pixmap icon_pixmap;
             int32_t scr;
-            uint32_t icon_count;
-            const char **icons;
             _neko_XCursors cursors;
             PFN_glXSwapIntervalEXT glXSwapIntervalEXT;
             PFN_glXSwapIntervalSGI glXSwapIntervalSGI;
@@ -274,7 +271,7 @@ typedef struct neko_Window {
 /**************************/
 
 /// Initialise platform dependent backend api for nekowin library
-LIBNWIN_API void neko_InitAPI(uint32_t _count, const char **_icons);
+LIBNWIN_API void neko_InitAPI();
 
 
 /// Get the initialisation status of the API
@@ -303,6 +300,10 @@ LIBNWIN_API neko_Window neko_NewWindow(
     int32_t _spawn_y,
     const char *_title
 );
+
+
+/// Explicitly set window icons
+LIBNWIN_API void neko_SetIcons(neko_Window *_win, uint32_t _count, neko_Icon *_icons);
 
 
 /// Initialise the given neko_Window instance for Vulkan surface 
