@@ -559,7 +559,7 @@ char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
 
 #ifdef _DEBUG
     *_ext_c = 3;
-    strcpy(exts[2], "VK_KHR_debug_utils");
+    strcpy(exts[2], "VK_EXT_debug_utils");
 #else
     *_ext_c = 2;
 #endif
