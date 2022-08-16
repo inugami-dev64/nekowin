@@ -209,16 +209,16 @@ typedef enum _neko_CursorMode {
 typedef uint64_t neko_InputBits;
 #define NEKO_MAX_INPUT_BIT_COMBO     8
 
-struct _EventQueue {
+typedef struct _EventQueue {
     neko_HidEvent events[NEKO_HID_EVENT_COUNT];
     uint32_t size;
-};
+} EventQueue;
 
 
-enum _VirtualCursorOverflowAction {
+typedef enum _VirtualCursorOverflowAction {
 	NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_BLOCK,
 	NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE
-};
+} VirtualCursorOverflowAction;
 
 
 /// Input event data structure for storing information about retrieved inputs
@@ -234,8 +234,8 @@ typedef struct _neko_Input {
 		int64_t max_vc_y;
 		int64_t min_vc_x;
 		int64_t min_vc_y;
-		enum _VirtualCursorOverflowAction x_overflow;
-		enum _VirtualCursorOverflowAction y_overflow;
+		VirtualCursorOverflowAction x_overflow;
+		VirtualCursorOverflowAction y_overflow;
 		
 		// Flag
 		bool is_virtual;
@@ -245,8 +245,8 @@ typedef struct _neko_Input {
 	struct {
         bool active_table[NEKO_HID_EVENT_COUNT];
         bool released_table[NEKO_HID_EVENT_COUNT];
-        struct _EventQueue active_queue;
-        struct _EventQueue released_queue;
+        EventQueue active_queue;
+        EventQueue released_queue;
     } raw;
 
     struct {
