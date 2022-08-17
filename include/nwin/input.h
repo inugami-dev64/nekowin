@@ -162,7 +162,7 @@ typedef enum _neko_HidEvent {
 	NEKO_MOUSE_BTN_3,
 	NEKO_MOUSE_SCROLL_DOWN,
 	NEKO_MOUSE_SCROLL_UP,
-    NEKO_MOUSE_MAX,
+    NEKO_MOUSE_BTN_MAX,
 
     /// Mouse delta movements
 	NEKO_MOUSE_DELTA_X,

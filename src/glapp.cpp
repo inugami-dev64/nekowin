@@ -239,6 +239,11 @@ int draw(neko_Window &_win, bool &_allow_toggle) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             _allow_toggle = true;
         }
+
+        if(_win.input.raw.active_table[NEKO_MOUSE_SCROLL_UP])
+            std::cout << "glapp: Mouse scroll up" << std::endl;
+        if(_win.input.raw.active_table[NEKO_MOUSE_SCROLL_DOWN])
+            std::cout << "glapp: Mouse scroll down" << std::endl;
     } else {
         // check if disabling text mode is required
         if(_win.input.raw.active_table[NEKO_KEY_ESCAPE] && _allow_toggle) {

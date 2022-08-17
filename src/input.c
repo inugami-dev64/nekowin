@@ -1,7 +1,7 @@
-/// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
-/// licence: Apache, see LICENCE.md
-/// file: input.c - neko cross-platfrom input API source file
-/// author: Karl-Mihkel Ott
+// nekowin: OpenGL and Vulkan compatible library for context / surface window generation 
+// licence: Apache, see LICENCE.md
+// file: input.c - neko cross-platfrom input API source file
+// author: Karl-Mihkel Ott
 
 #define INPUT_C
 #include "nwin/input.h"
@@ -13,7 +13,7 @@ void _neko_RegisterInputEvent(neko_Input *_input, neko_HidEvent _event, bool _ac
     if(_active) {
         _input->raw.active_table[_event] = true;
         _input->raw.released_table[_event] = false;
-    } else {
+    } else if(_event < NEKO_MOUSE_SCROLL_DOWN || _event > NEKO_MOUSE_SCROLL_UP){
         _input->raw.released_table[_event] = true;
         _input->raw.active_table[_event] = false;
     }

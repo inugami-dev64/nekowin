@@ -29,7 +29,6 @@ void _neko_RegisterRaw(neko_Window *_win, int _type, XKeyEvent *_kev) {
 }
 
 void _neko_HandleKeyEvents(neko_Window *_win, int _type, XKeyEvent *_kev) {
-    
     KeySym sym = 0;
     if(_win->input.use_text_mode && _type == KeyPress) {
         XLookupString(_kev, NULL, 0, &sym, NULL);
@@ -425,6 +424,8 @@ void neko_UpdateWindow(neko_Window *_win) {
     // Set notfiy booleans to false for updating resize update information
     _win->resize_notify = false;
     _neko_ClearReleasedInputs();
+    _win->input.raw.active_table[NEKO_MOUSE_SCROLL_DOWN] = false;
+    _win->input.raw.active_table[NEKO_MOUSE_SCROLL_UP] = false;
     
     XPending(_neko_API.display);
     while(QLength(_neko_API.display)) {
