@@ -228,6 +228,8 @@ typedef struct _neko_Input {
 		int64_t y;
 		int64_t orig_x;
 		int64_t orig_y;
+        int64_t delta_x;
+        int64_t delta_y;
 
 		// Virtual cursor boundaries
 		int64_t max_vc_x;
