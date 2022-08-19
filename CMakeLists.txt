@@ -37,6 +37,11 @@ else()
     endif()
 endif()
 
+# Debug definition macro
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    add_compile_definitions(-D__DEBUG)
+endif()
+
 include(cmake/libnwin.cmake)
 
 if(NEKOWIN_BUILD_GAMEPAD_INFO)

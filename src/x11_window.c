@@ -556,7 +556,7 @@ char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
     static char lexts[3][32] = { 0 };
     static char *exts[3] = { lexts[0], lexts[1], lexts[2] };
 
-#ifdef _DEBUG
+#ifdef __DEBUG
     *_ext_c = 3;
     strcpy(exts[2], "VK_EXT_debug_utils");
 #else

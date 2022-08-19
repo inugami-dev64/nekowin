@@ -42,11 +42,6 @@ elseif(APPLE)
     message(FATAL_ERROR "Nekowin does not support macos")
 endif()
 
-# Check if debug mode is used
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-    add_compile_options(-D_DEBUG)
-endif()
-
 # Build static library
 if(NEKOWIN_BUILD_STATIC_LIB)
     add_library(${LIBNWIN_STATIC_TARGET} STATIC

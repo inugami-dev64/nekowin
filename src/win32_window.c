@@ -271,9 +271,9 @@ void neko_InitAPI() {
     _neko_API.instance = GetModuleHandleW(NULL);
     
     // Define cursors
-    _neko_API.cursors.standard = LoadCursorW(NULL, IDC_ARROW);
-    _neko_API.cursors.pointer = LoadCursorW(NULL, IDC_HAND);
-    _neko_API.cursors.waiting = LoadCursorW(NULL, IDC_WAIT);
+    _neko_API.cursors.standard = LoadCursorA(NULL, IDC_ARROW);
+    _neko_API.cursors.pointer = LoadCursorA(NULL, IDC_HAND);
+    _neko_API.cursors.waiting = LoadCursorA(NULL, IDC_WAIT);
     _neko_API.cursors.hidden = NULL;
     _neko_API.is_init = true;
 
@@ -318,8 +318,7 @@ neko_Window neko_NewWindow (
     neko_Hint hints,
     int32_t _spawn_x,
     int32_t _spawn_y,
-    const char *_title,
-    const char *_icon
+    const char *_title
 ) {
     neko_Window win = { 0 };
 
@@ -553,9 +552,9 @@ char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
     static char lexts[3][32] = { 0 };
     static char *exts[3] = { lexts[0], lexts[1], lexts[2]};
 
-#ifdef _DEBUG
+#ifdef __DEBUG
     *_ext_c = 3;
-    strcpy(exts[2], "VK_EXT_debug_utils");
+    strcpy(exts[2], "VK_EXT_DEBUG_utils");
 #else
     *_ext_c = 2;
 #endif
