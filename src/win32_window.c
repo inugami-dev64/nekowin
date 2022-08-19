@@ -196,40 +196,42 @@ static DWORD _neko_HandleSizeHints(neko_Window *_win) {
 
 static void _neko_HandleMouseMovement(neko_Window* _win, POINT _pt) {
     if (_win->input.cursor.is_virtual) {     // virtual cursor is enabled
-        int64_t delta_x = ((int64_t)_pt.x - _win->input.cursor.orig_x);
-        int64_t delta_y = ((int64_t)_pt.y - _win->input.cursor.orig_y);
+        _win->input.cursor.delta_x = ((int64_t)_pt.x - _win->input.cursor.orig_x);
+        _win->input.cursor.delta_y = ((int64_t)_pt.y - _win->input.cursor.orig_y);
 
         // Check if cursor should be set to the origin position
-        if (delta_x || delta_y)
+        if (_win->input.cursor.delta_x || _win->input.cursor.delta_y)
             neko_SetMouseCoords(_win, _win->input.cursor.orig_x, _win->input.cursor.orig_y);
 
         // Check if overflow is detected on x position
-        if (_win->input.cursor.x + delta_x > _win->input.cursor.max_vc_x) {
+        if (_win->input.cursor.x + _win->input.cursor.delta_x > _win->input.cursor.max_vc_x) {
             if (_win->input.cursor.x_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
                 _win->input.cursor.x = _win->input.cursor.min_vc_x;
         }
-        else if (_win->input.cursor.x + delta_x < _win->input.cursor.min_vc_x) {
+        else if (_win->input.cursor.x + _win->input.cursor.delta_x < _win->input.cursor.min_vc_x) {
             if (_win->input.cursor.x_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
                 _win->input.cursor.x = _win->input.cursor.max_vc_x;
         }
         else {
-            _win->input.cursor.x += delta_x;
+            _win->input.cursor.x += _win->input.cursor.delta_x;
         }
 
         // Check if overflow is detected on y position
-        if (_win->input.cursor.y + delta_y > _win->input.cursor.max_vc_y) {
+        if (_win->input.cursor.y + _win->input.cursor.delta_y > _win->input.cursor.max_vc_y) {
             if (_win->input.cursor.y_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
                 _win->input.cursor.y = _win->input.cursor.min_vc_y;
         }
-        else if (_win->input.cursor.y + delta_y < _win->input.cursor.min_vc_y) {
+        else if (_win->input.cursor.y + _win->input.cursor.delta_y < _win->input.cursor.min_vc_y) {
             if (_win->input.cursor.y_overflow == NEKO_VIRTUAL_CURSOR_OVERFLOW_ACTION_OVERWRITE)
                 _win->input.cursor.y = _win->input.cursor.max_vc_y;
         }
         else {
-            _win->input.cursor.y += delta_y;
+            _win->input.cursor.y += _win->input.cursor.delta_y;
         }
     }
     else {                                // virtual cursor is disabled
+        _win->input.cursor.delta_x = ((int64_t)_pt.x) - _win->input.cursor.x;
+        _win->input.cursor.delta_y = ((int64_t)_pt.y) - _win->input.cursor.y;
         _win->input.cursor.x = (int64_t)_pt.x;
         _win->input.cursor.y = (int64_t)_pt.y;
     }
