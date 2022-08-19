@@ -195,8 +195,6 @@ static DWORD _neko_HandleSizeHints(neko_Window *_win) {
 
 
 static void _neko_HandleMouseMovement(neko_Window* _win, POINT _pt) {
-    ScreenToClient(_win->win32.handle, &_pt);
-
     if (_win->input.cursor.is_virtual) {     // virtual cursor is enabled
         int64_t delta_x = ((int64_t)_pt.x - _win->input.cursor.orig_x);
         int64_t delta_y = ((int64_t)_pt.y - _win->input.cursor.orig_y);
@@ -554,7 +552,7 @@ char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
 
 #ifdef __DEBUG
     *_ext_c = 3;
-    strcpy(exts[2], "VK_EXT_DEBUG_utils");
+    strcpy(exts[2], "VK_EXT_debug_utils");
 #else
     *_ext_c = 2;
 #endif
