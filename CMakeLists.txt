@@ -39,7 +39,7 @@ endif()
 
 # Debug definition macro
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    add_compile_definitions(-D__DEBUG)
+    add_definitions(-D__DEBUG)
 endif()
 
 include(cmake/libnwin.cmake)

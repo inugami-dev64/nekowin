@@ -32,6 +32,7 @@ extern "C" {
 #include "nwin/input.h"
 #include "nwin/icon.h"
 #include "nwin/gamepad.h"
+#include "nwin/glad/glad.h"
 
 // Hint declarations
 typedef uint16_t neko_Hint;
@@ -215,8 +216,6 @@ typedef uint16_t neko_Hint;
         } _neko_API = { 0 };
     #endif
 #endif
-
-#include "nwin/glad/glad.h"
 
 #define UC_BUFFER_SIZE 32
 
