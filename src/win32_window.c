@@ -346,6 +346,7 @@ neko_Window neko_NewWindow (
                                        NULL, NULL,
                                        _neko_API.instance, NULL);
     except(win.win32.handle, "Failed to create a Win32 window");
+    win.win32.instance = _neko_API.instance;
     
     // NOTE: Whenever using WIN32 api, you must keep in mind that the created window size is absolute and contains all window decorations as well.
     //       In order to find the actual client are we must use GetClientRect() function

@@ -32,7 +32,6 @@ extern "C" {
 #include "nwin/input.h"
 #include "nwin/icon.h"
 #include "nwin/gamepad.h"
-#include "nwin/glad/glad.h"
 
 // Hint declarations
 typedef uint16_t neko_Hint;
@@ -62,6 +61,7 @@ typedef uint16_t neko_Hint;
 
     typedef struct _neko_NativeWindowWin32 {
         HWND handle;
+        HINSTANCE instance;
         MSG message;
         RAWINPUTDEVICE rids[2];
         RAWINPUT raw_input;
@@ -130,6 +130,8 @@ typedef uint16_t neko_Hint;
             _neko_Cursors cursors;
         } _neko_API = { 0 };
 #endif
+    #include "nwin/glad/glad.h"
+
 
     #define __NEKO_CLASS_NAME           "NWIN"
     #define __NEKO_WGL_PF_ATTRIB_C      40
@@ -141,6 +143,7 @@ typedef uint16_t neko_Hint;
 
     typedef struct {
         Window window;
+        Display* display;
         GC gc;
         GLXContext glc;
         GLXDrawable drawable;

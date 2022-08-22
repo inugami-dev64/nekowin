@@ -319,6 +319,7 @@ neko_Window neko_NewWindow (
 
     // Check if the window was created successfully
     except(win.x11.window, "Failed to create x11 window!");
+    win.x11.display = _neko_API.display;
     XMapWindow(_neko_API.display, win.x11.window);
     XStoreName(_neko_API.display, win.x11.window, win.window_title);
     _neko_UpdateWindowSize(&win);
