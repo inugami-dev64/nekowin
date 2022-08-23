@@ -306,6 +306,7 @@ int main() {
     neko_Window win = neko_NewWindow(width, height, NEKO_HINT_RESIZEABLE, 0, 0, "GLTest");
     neko_CreateOpenGLContext(&win);
     neko_MakeOpenGLContextCurrent(&win);
+    neko_SetSwapInterval(&win, 0);
     neko_LoadOpenGLFunctions();
 
     neko_Icon icons[1] = { 0 };

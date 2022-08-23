@@ -42,8 +42,7 @@ typedef struct _neko_NativeWindowX11 {
 	GC gc;
 	GLXContext glc;
 	GLXDrawable drawable;
-	XVisualInfo* p_vi;
-	XVisualInfo vi;
+    XVisualInfo visual;
 } neko_NativeWindowX11;
 
 

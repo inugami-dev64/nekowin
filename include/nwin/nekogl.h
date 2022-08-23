@@ -9,17 +9,19 @@
 #ifdef NEKO_GL_C
 	#include <stdint.h>
 	#include <stdbool.h>
-#ifdef _WIN32
+    #include "nwin/glad/glad.h"
+#if defined(_WIN32)
 	#include <Windows.h>
+#elif defined(__linux__)
+    #include <string.h>
+    #include <GL/glx.h>
 #endif	
 
 	#include "nwin/nekodll.h"
 	#include "nwin/neko_except.h"
 	#include "nwin/input.h"
+    #include "nwin/x11_api.h"
 	#include "nwin/neko_window.h"
-	#include "nwin/glad/glad.h"
-	
-	#include "nwin/nwin.h"
 #endif
 
 /// OpenGL version definition macros
@@ -31,6 +33,7 @@ void LIBNWIN_API neko_SwapBuffers(neko_Window *_win);
 void LIBNWIN_API neko_CreateOpenGLContext(neko_Window *_win);
 void LIBNWIN_API neko_MakeOpenGLContextCurrent(neko_Window *_win);
 void LIBNWIN_API neko_LoadOpenGLFunctions();
+void LIBNWIN_API neko_SetSwapInterval(neko_Window *_win, int _interval);
 void LIBNWIN_API neko_DeleteOpenGLContext(neko_Window *_win);
 
 #endif

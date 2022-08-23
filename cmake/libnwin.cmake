@@ -7,13 +7,13 @@ set(LIBNWIN_STATIC_TARGET nwin-static)
 set(LIBNWIN_SHARED_TARGET nwin-shared)
 
 set(LIBNWIN_HEADERS
+	include/nwin/glad/glad.h
+	include/nwin/nekogl.h
+    include/nwin/gamepad.h
     include/nwin/icon.h
     include/nwin/input.h
     include/nwin/nekodll.h
     include/nwin/nwin.h 
-    include/nwin/gamepad.h
-	include/nwin/glad/glad.h
-	include/nwin/nekogl.h
 )
 
 set(LIBNWIN_SOURCES
@@ -38,6 +38,7 @@ elseif(UNIX AND NOT APPLE)
 
     list(APPEND LIBNWIN_SOURCES 
         src/linux_gamepad.c
+        src/nekoglx.c
         src/x11_translation.c
         src/x11_window.c
         src/xkb_unicode.c)

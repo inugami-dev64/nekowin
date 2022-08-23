@@ -27,10 +27,13 @@ extern "C" {
 #if defined(_WIN32)
     #include <windows.h>
     #include <windowsx.h>
+    #include "nwin/glad/glad.h"
 #elif defined(__linux__)
     #include <X11/X.h>
     #include <X11/Xatom.h>
     #include <X11/XKBlib.h>
+    #include "nwin/glad/glad.h"
+    #include <GL/glx.h>
 #endif
 
 #include "nwin/neko_window.h"
@@ -56,24 +59,27 @@ extern "C" {
     #include <unistd.h>
     #include "nwin/x11_translation.h"
     #include "nwin/xkb_unicode.h"
+    #include "x11_api.h"
+    #include <X11/cursorfont.h>
+
+    // NET_WM message type definitions
+    #define _NET_WM_STATE_REMOVE    0
+    #define _NET_WM_STATE_ADD       1
 
     /// Structure for containing all API specific information 
     static struct {
         bool is_init;
         Display *display;
-        _neko_X11Atoms atoms;
+        neko_AtomsX11 atoms;
         Window root;
         int32_t scr;
-        _neko_XCursors cursors;
-        PFN_glXSwapIntervalEXT glXSwapIntervalEXT;
-        PFN_glXSwapIntervalSGI glXSwapIntervalSGI;
-        PFN_glXSwapIntervalMESA glXSwapIntervalMESA;
+        neko_Cursors cursors;
+        XVisualInfo visual;
     } _neko_API = { 0 };
 #endif
 
 #define UC_BUFFER_SIZE 32
 
-#include "nwin/glad/glad.h"
 #include "nwin/neko_window.h"
 
 
@@ -83,7 +89,6 @@ extern "C" {
     static void _neko_HandleKeyEvents(neko_Window *_win, int _type, XKeyEvent *_kev); 
     static void _neko_HandleMouseEvents(neko_Window *_win, int _type, XButtonEvent *_bev); 
     static void _neko_HandleMouseMovement(neko_Window *_win, int64_t _x, int64_t _y);
-    static void _neko_GetVisualInfo(neko_Window *_win);
     static void _neko_SendClientMessage(neko_Window *_win, Atom _msg_type, long *_data);
     static void _neko_UpdateWindowSize(neko_Window *_win);
     static void _neko_LoadCursors();

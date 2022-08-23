@@ -66,6 +66,11 @@ void neko_LoadOpenGLFunctions() {
 }
 
 
+void neko_SetSwapInterval(neko_Window *_win, int _interval) {
+    // please implement
+}
+
+
 void neko_DeleteOpenGLContext(neko_Window *_win) {
 	BOOL stat = wgl.DeleteContext(_win->win32.gl);
 	except(stat, "Failed to delete wgl context");

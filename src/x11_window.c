@@ -111,25 +111,6 @@ void _neko_HandleMouseMovement(neko_Window *_win, int64_t _x, int64_t _y) {
 }
 
 
-void _neko_GetVisualInfo(neko_Window *_win) {
-    if(_win->hints & NEKO_HINT_API_OPENGL) {
-        GLint attrs[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-        XVisualInfo *vi = glXChooseVisual(_neko_API.display, 0, attrs);
-
-        except(vi, "Failed to choose GLX visual")
-        _win->x11.p_vi = vi;
-    }
-
-    else {
-        memset(&_win->x11.vi, 0, sizeof(Visual));
-        _win->x11.vi.screen = _neko_API.scr;
-        _win->x11.vi.visual = DefaultVisual(_neko_API.display, _neko_API.scr);
-        _win->x11.vi.depth = DefaultDepth(_neko_API.display, _neko_API.scr);
-        _win->x11.vi.bits_per_rgb = 32;
-    }
-}
-
-
 void _neko_SendClientMessage(neko_Window *_win, Atom _msg_type, long *_data) {
     XEvent ev = { ClientMessage };
     ev.xclient.window = _win->x11.window;
@@ -146,26 +127,22 @@ void _neko_SendClientMessage(neko_Window *_win, Atom _msg_type, long *_data) {
 
 
 void _neko_UpdateWindowSize(neko_Window *_win) {
-    if (!(_win->hints & NEKO_HINT_FIXED_SIZE) && !(_win->hints & NEKO_HINT_RESIZEABLE) && !(_win->hints & NEKO_HINT_FULL_SCREEN))
+    if (_win->hints == NEKO_HINT_UNKNOWN)
         _win->hints |= NEKO_HINT_FIXED_SIZE;
 
-    if(_win->hints & NEKO_HINT_FULL_SCREEN) {
+    if(_win->hints == NEKO_HINT_FULL_SCREEN) {
         // Send _NET_WM_STATE_FULLSCREEN atom to the window manager and the window manager should make 
         // the window into fullscreen
         long ldata[5] = { _NET_WM_STATE_ADD, _neko_API.atoms._NET_WM_STATE_FULLSCREEN, 0, 1, 0 };
         _neko_SendClientMessage(_win, _neko_API.atoms._NET_WM_STATE, ldata);
-    }
-
-    else {
+    } else {
         // Send _NET_WM_STATE_REMOVE event to the window manager
         long ldata[] = { _NET_WM_STATE_REMOVE, _neko_API.atoms._NET_WM_STATE_FULLSCREEN, 0, 1, 0 };
         _neko_SendClientMessage(_win, _neko_API.atoms._NET_WM_STATE, ldata);
     }
 
     /// Set flags for creating a fixed window
-    /// however it is up to windows manager to decide if the size hint flags 
-    /// are respected or not
-    if(_win->hints & NEKO_HINT_FIXED_SIZE) {
+    if(_win->hints == NEKO_HINT_FIXED_SIZE) {
         XSizeHints size_hints = { 0 };
         size_hints.flags |= (PMinSize | PMaxSize);
         size_hints.min_width = size_hints.max_width = _win->owidth;
@@ -173,9 +150,7 @@ void _neko_UpdateWindowSize(neko_Window *_win) {
         
         // Submit size hints
         XSetWMNormalHints(_neko_API.display, _win->x11.window, &size_hints);
-    }
-
-    else if(_win->hints & NEKO_HINT_RESIZEABLE) {
+    } else if(_win->hints & NEKO_HINT_RESIZEABLE) {
         XSizeHints size_hints = { 0 };
 
         // Submit size hints
@@ -225,24 +200,6 @@ void neko_InitAPI() {
     // Check if detectable keyboard autorepeat is supported
     Bool supported;
     except(XkbSetDetectableAutoRepeat(_neko_API.display, True, &supported), "XkbDetectableAutoRepeat() is not supported")
-
-    // verify that GLX_EXT_swap_control extension is present
-    const char* extensions = glXQueryExtensionsString(_neko_API.display, _neko_API.scr);
-
-    // Check if any swap interval function pointers are present
-    const char* ptr = extensions;
-    const char* pt = NULL;
-    while ((pt = strchr(ptr, ' ')) && ptr != (const char*)1) {
-        if (!strncmp(GLX_SWAP_CONTROL_EXT_NAME, ptr, strlen(GLX_SWAP_CONTROL_EXT_NAME)))
-            _neko_API.glXSwapIntervalEXT = (PFN_glXSwapIntervalEXT)glXGetProcAddress((const GLubyte*)GLX_SWAP_CONTROL_EXT_NAME);
-        else if (!strncmp(GLX_SWAP_CONTROL_SGI_NAME, ptr, strlen(GLX_SWAP_CONTROL_SGI_NAME)))
-            _neko_API.glXSwapIntervalSGI = (PFN_glXSwapIntervalSGI)glXGetProcAddress((const GLubyte*)GLX_SWAP_CONTROL_SGI_NAME);
-        else if (!strncmp(GLX_SWAP_CONTROL_MESA_NAME, ptr, strlen(GLX_SWAP_CONTROL_MESA_NAME)))
-            _neko_API.glXSwapIntervalMESA = (PFN_glXSwapIntervalMESA)glXGetProcAddress((const GLubyte*)GLX_SWAP_CONTROL_MESA_NAME);
-
-        ptr = pt + 1;
-    }
-
     _neko_API.is_init = true;
 }
 
@@ -273,7 +230,7 @@ void neko_DeinitAPI() {
 neko_Window neko_NewWindow (
     int32_t _width,
     int32_t _height,
-    neko_Hint _hints,
+    neko_SizeHint _hints,
     int32_t _spawn_x,
     int32_t _spawn_y,
     const char *_title
@@ -286,42 +243,32 @@ neko_Window neko_NewWindow (
     win.oheight = (win.cheight = _height);
     win.oposx = (win.cposx = _spawn_x);
     win.oposy = (win.cposy = _spawn_y);
-    win.window_title = _title;
+    win.title = _title;
 
     win.hints = _hints;
     win.input.cursor.orig_x = (int64_t) _width >> 1;
     win.input.cursor.orig_y = (int64_t) _height >> 1;
- 
-    // Retrieve visual info about the window
-    _neko_GetVisualInfo(&win);
 
     XSetWindowAttributes swa = { 0 };
     swa.event_mask = EVENT_MASK;
+
+    Visual *visual = DefaultVisual(_neko_API.display, _neko_API.scr);
+    int depth = DefaultDepth(_neko_API.display, _neko_API.scr);
     
     // Create a new window
-    if(win.x11.p_vi) {
-        swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, win.x11.p_vi->visual, AllocNone);
-        win.x11.window = XCreateWindow(_neko_API.display, _neko_API.root,
-                                       win.oposx, win.oposy, win.owidth, win.oheight,
-                                       0, win.x11.p_vi->depth,
-                                       InputOutput, win.x11.p_vi->visual,
-                                       VALUE_MASK,
-                                       &swa);
-    } else {
-        swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, win.x11.vi.visual, AllocNone);
-        win.x11.window = XCreateWindow(_neko_API.display, _neko_API.root,
-                                       _spawn_x, _spawn_y, win.cwidth, win.cheight,
-                                       0, win.x11.vi.depth, 
-                                       InputOutput, win.x11.vi.visual,
-                                       VALUE_MASK,
-                                       &swa);
-    }
+    swa.colormap = XCreateColormap(_neko_API.display, _neko_API.root, visual, AllocNone);
+    win.x11.window = XCreateWindow(_neko_API.display, _neko_API.root,
+                                   win.oposx, win.oposy, win.owidth, win.oheight,
+                                   0, depth,
+                                   InputOutput, visual,
+                                   VALUE_MASK,
+                                   &swa);
 
     // Check if the window was created successfully
     except(win.x11.window, "Failed to create x11 window!");
     win.x11.display = _neko_API.display;
     XMapWindow(_neko_API.display, win.x11.window);
-    XStoreName(_neko_API.display, win.x11.window, win.window_title);
+    XStoreName(_neko_API.display, win.x11.window, win.title);
     _neko_UpdateWindowSize(&win);
     win.is_running = true;
     
@@ -354,10 +301,6 @@ neko_Window neko_NewWindow (
         XSetWMHints(_neko_API.display, win.x11.window, hints);
         XFree(hints);
     }
-
-
-    if(_hints & NEKO_HINT_API_OPENGL)
-        win.x11.glc = glXCreateContext(_neko_API.display, win.x11.p_vi, NULL, GL_TRUE);
 
     return win;
 }
@@ -400,28 +343,8 @@ void neko_SetIcons(neko_Window *_win, uint32_t _count, neko_Icon *_icons) {
 }
 
 
-VkResult neko_InitVkSurface (
-    neko_Window *_win, 
-    VkInstance _ins,
-    VkSurfaceKHR *_surface
-) {
-    VkXlibSurfaceCreateInfoKHR surface_info;
-    surface_info.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-    surface_info.window = _win->x11.window;
-    surface_info.dpy = _neko_API.display;
-    surface_info.flags = 0;
-    surface_info.pNext = NULL;
-
-    PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
-    vkCreateXlibSurfaceKHR = (PFN_vkCreateXlibSurfaceKHR) vkGetInstanceProcAddr(_ins, "vkCreateXlibSurfaceKHR");
-
-    return vkCreateXlibSurfaceKHR(_ins, &surface_info, NULL, _surface);
-} 
-
-
 void neko_UpdateWindow(neko_Window *_win) {
     // Set notfiy booleans to false for updating resize update information
-    _win->resize_notify = false;
     _neko_ClearReleasedInputs();
     _win->input.raw.active_table[NEKO_MOUSE_SCROLL_DOWN] = false;
     _win->input.raw.active_table[NEKO_MOUSE_SCROLL_UP] = false;
@@ -441,7 +364,6 @@ void neko_UpdateWindow(neko_Window *_win) {
                     XConfigureEvent *xce = &ev.xconfigure;
 
                     if(xce->width != _win->cwidth || xce->height != _win->cheight) {
-                        _win->resize_notify = true;
                         _win->cwidth = xce->width;
                         _win->cheight = xce->height;
                         _win->input.cursor.orig_x = _win->cwidth / 2;
@@ -478,35 +400,17 @@ void neko_UpdateWindow(neko_Window *_win) {
         }
     }
 
-    // Check if the window is used as in OpenGL context
-    if(_win->hints & NEKO_HINT_API_OPENGL) {
-        glXSwapBuffers(_neko_API.display, _win->x11.window);
-    }
-
     XFlush(_neko_API.display);
 }
 
 
-void neko_UpdateSizeMode(neko_Window *_win, neko_Hint _hints) {
-    if(_win->hints & NEKO_HINT_API_OPENGL)
-        _win->hints = _hints | NEKO_HINT_API_OPENGL;
-    else if(_win->hints & NEKO_HINT_API_VULKAN)
-        _win->hints = _hints | NEKO_HINT_API_VULKAN;
-    else _win->hints = _hints;
-
+void neko_UpdateSizeMode(neko_Window *_win, neko_SizeHint _hints) {
+    _win->hints = _hints;
     _neko_UpdateWindowSize(_win);
 }
 
 
-void neko_glMakeCurrent(neko_Window* _win) {
-    glXMakeCurrent(_neko_API.display, _win->x11.window, _win->x11.glc);
-    _win->x11.drawable = glXGetCurrentDrawable();
-}
-
-
 void neko_DestroyWindow(neko_Window *_win) {
-    if(_win->hints & NEKO_HINT_API_OPENGL)
-        glXDestroyContext(_neko_API.display, _win->x11.glc);
     XDestroyWindow(_neko_API.display, _win->x11.window);
 }
 
@@ -567,4 +471,15 @@ char **neko_FindRequiredVkExtensionStrings(uint32_t *_ext_c) {
     strcpy(exts[1], "VK_KHR_xlib_surface");
 
     return exts;
+}
+
+
+/**** Api getters ****/
+Display *GetDisplay() {
+    return _neko_API.display;
+}
+
+
+int32_t GetScreen() {
+    return _neko_API.scr;
 }
