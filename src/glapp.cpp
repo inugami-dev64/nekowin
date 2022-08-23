@@ -196,11 +196,11 @@ int draw(neko_Window &_win, bool &_allow_toggle) {
     if(!_win.input.use_text_mode) {
         if(_win.input.raw.active_table[NEKO_KEY_F] && _allow_toggle) {
             _allow_toggle = false;
-            if (_win.hints & NEKO_HINT_FULL_SCREEN) {
+            if (_win.hints == NEKO_HINT_FULL_SCREEN) {
                 std::cout << "glapp: Disabling full-screen mode" << std::endl;
-                neko_UpdateSizeMode(&_win, NEKO_HINT_NO_FULL_SCREEN);
+                neko_UpdateSizeMode(&_win, NEKO_HINT_RESIZEABLE);
             }
-            else if (_win.hints & NEKO_HINT_NO_FULL_SCREEN) {
+            else if (_win.hints == NEKO_HINT_RESIZEABLE) {
                 std::cout << "glapp: Enabling full-screen mode" << std::endl;
                 neko_UpdateSizeMode(&_win, NEKO_HINT_FULL_SCREEN);
             }
@@ -271,6 +271,7 @@ void run(neko_Window &parent) {
 
     while(parent.is_running) {
         neko_UpdateWindow(&parent);
+        neko_SwapBuffers(&parent);
         if (!draw(parent, allow_toggle))
             break;
     }
@@ -285,6 +286,7 @@ void cleanup(neko_Window &_parent) {
     glDeleteBuffers(1, &ibo);
     glDeleteProgram(sh_program);
 
+    neko_DeleteOpenGLContext(&_parent);
     neko_DestroyWindow(&_parent);
     neko_DeinitAPI();
 }
@@ -300,28 +302,23 @@ int main() {
     
     // Create a new window
     neko_InitAPI();
-    neko_Window parent_win = neko_NewWindow(width, height, NEKO_HINT_API_OPENGL | NEKO_HINT_RESIZEABLE, 0, 0, "GLTest");
-    neko_glMakeCurrent(&parent_win);
+    neko_LoadOpenGLPlatform();
+    neko_Window win = neko_NewWindow(width, height, NEKO_HINT_RESIZEABLE, 0, 0, "GLTest");
+    neko_CreateOpenGLContext(&win);
+    neko_MakeOpenGLContextCurrent(&win);
+    neko_LoadOpenGLFunctions();
 
-    int status = neko_LoadGL();
-    if(!status) {
-        std::cerr << "Failed to load OpenGL functions" << std::endl;
-        std::exit(-1);
-    }
-
-    neko_Icon icons[2];
+    neko_Icon icons[1] = { 0 };
     icons[0].pixels = stbi_load("../icon/32x32.png", &icons[0].width, &icons[0].height, 0, 4);
-    icons[1].pixels = stbi_load("../icon/16x16/png", &icons[0].width, &icons[0].height, 0, 4);
 
-    neko_SetIcons(&parent_win, 2, icons);
+    neko_SetIcons(&win, 1, icons);
     free(icons[0].pixels);
-    free(icons[1].pixels);
 
-    neko_SetMouseCursorMode(&parent_win, NEKO_CURSOR_MODE_STANDARD);
+    neko_SetMouseCursorMode(&win, NEKO_CURSOR_MODE_STANDARD);
     compile_shaders();
     create_buffer_handles();
-    run(parent_win);
-    cleanup(parent_win);
+    run(win);
+    cleanup(win);
 
     return 0;
 }

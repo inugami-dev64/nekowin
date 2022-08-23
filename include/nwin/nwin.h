@@ -12,240 +12,69 @@ extern "C" {
 
 
 #if defined(X11_WINDOW_C) || defined(WIN32_WINDOW_C)
-    #include <stdlib.h>
-    #include <stdio.h>
-    #define except(_cond, _msg) if(!_cond) { fprintf(stderr, "libneko: %s\n", _msg); abort(); }
+    #include "nwin/neko_except.h"
 #endif
-
-
-/// OpenGL version definition macros
-#define OPENGL_SUPPORTED_MAJOR  4
-#define OPENGL_SUPPORTED_MINOR  6
-
-#define neko_LoadGL gladLoadGL
 
 // std includes
 #include <stdbool.h>
 #include <stdint.h>
-#include <vulkan/vulkan.h>
 #include "nwin/nekodll.h"
 #include "nwin/input.h"
 #include "nwin/icon.h"
 #include "nwin/gamepad.h"
 
-// Hint declarations
-typedef uint16_t neko_Hint;
-#define NEKO_HINT_API_OPENGL        0x0001
-#define NEKO_HINT_API_VULKAN        0x0002
-#define NEKO_HINT_FULL_SCREEN       0x0004
-#define NEKO_HINT_FIXED_SIZE        0x0008
-#define NEKO_HINT_RESIZEABLE        0x0010
-#define NEKO_HINT_NO_FULL_SCREEN    0x0010
-
 /// Platform specific includes, structures and definitions
 #if defined(_WIN32)
     #include <windows.h>
     #include <windowsx.h>
-    #include <vulkan/vulkan_win32.h>
-
-
-    // Extension attribute values
-    #define WGL_CONTEXT_DEBUG_BIT_ARB               0x00000001
-    #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB        0x00000001
-    #define WGL_CONTEXT_MAJOR_VERSION_ARB           0x2091
-    #define WGL_CONTEXT_MINOR_VERSION_ARB           0x2092
-    #define WGL_CONTEXT_FLAGS_ARB                   0x2094
-    #define WGL_CONTEXT_RELEASE_BEHAVIOR_ARB        0x2097
-    #define WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB  0x2098
-    #define WGL_CONTEXT_PROFILE_MASK_ARB            0x9126
-
-    typedef struct _neko_NativeWindowWin32 {
-        HWND handle;
-        HINSTANCE instance;
-        MSG message;
-        RAWINPUTDEVICE rids[2];
-        RAWINPUT raw_input;
-        UINT raw_input_size;
-        HGLRC gl_context;
-    } neko_NativeWindowWin32;
-
-    #ifdef WIN32_WINDOW_C
-        #include "nwin/win32_translation.h"
-        typedef struct _neko_Cursors {
-            HCURSOR standard;
-            HCURSOR waiting;
-            HCURSOR pointer;
-            HCURSOR hidden;
-        } _neko_Cursors;
-
-
-        /// wgl function pointer type defintions
-        typedef HGLRC(WINAPI* PFN_wglCreateContext)(HDC);
-        typedef BOOL(WINAPI* PFN_wglDeleteContext)(HGLRC);
-        typedef BOOL(WINAPI* PFN_wglMakeCurrent)(HDC, HGLRC);
-        typedef PROC(WINAPI* PFN_wglGetProcAddress)(LPCSTR);
-        typedef HGLRC(WINAPI* PFN_wglGetCurrentContext)();
-        typedef HDC(WINAPI* PFN_wglGetCurrentDC)();
-
-        /// wgl extension function pointer type defintions
-        typedef BOOL(WINAPI* PFN_wglSwapIntervalEXT)(int);
-        typedef BOOL(WINAPI* PFN_wglGetPixelFormatAttribivARB)(HDC, int, int, UINT, const int*, int*);
-        typedef const char* (WINAPI* PFN_wglGetExtensionsStringEXT)();
-        typedef const char* (WINAPI* PFN_wglGetExtensionsStringARB)(HDC);
-        typedef HGLRC(WINAPI* PFN_wglCreateContextAttribsARB)(HDC, HGLRC, const int*);
-
-        typedef struct WGL {
-            BOOL is_init;
-            PFN_wglCreateContext CreateContext;
-            PFN_wglDeleteContext DeleteContext;
-            PFN_wglMakeCurrent MakeCurrent;
-            PFN_wglGetProcAddress GetProcAddress;
-            PFN_wglGetCurrentContext GetCurrentContext;
-            PFN_wglGetCurrentDC GetCurrentDC;
-
-            PFN_wglSwapIntervalEXT SwapIntervalEXT;
-            PFN_wglGetPixelFormatAttribivARB GetPixelFormatAttribivARB;
-            PFN_wglGetExtensionsStringARB GetExtensionsStringARB;
-            PFN_wglGetExtensionsStringEXT GetExtensionsStringEXT;
-            PFN_wglCreateContextAttribsARB CreateContextAttribsARB;
-
-            BOOL    EXT_swap_control;
-            BOOL    ARB_multisample;
-            BOOL    ARB_framebuffer_sRGB;
-            BOOL    EXT_framebuffer_sRGB;
-            BOOL    ARB_pixel_format;
-            BOOL    ARB_create_context;
-            BOOL    ARB_create_context_profile;
-            BOOL    EXT_create_context_es2_profile;
-            BOOL    ARB_create_context_robustness;
-            BOOL    ARB_create_context_no_error;
-            BOOL    ARB_context_flush_control;
-        } WGL;
-
-        static struct {
-            bool is_init;
-            ATOM main_class;
-            HINSTANCE instance;
-            WGL wgl;
-            _neko_Cursors cursors;
-        } _neko_API = { 0 };
-#endif
-    #include "nwin/glad/glad.h"
-
-
-    #define __NEKO_CLASS_NAME           "NWIN"
-    #define __NEKO_WGL_PF_ATTRIB_C      40
-
 #elif defined(__linux__)
-    // X11 includes
     #include <X11/X.h>
-    #include <GL/glx.h>
+    #include <X11/Xatom.h>
+    #include <X11/XKBlib.h>
+#endif
 
-    typedef struct {
-        Window window;
-        Display* display;
-        GC gc;
-        GLXContext glc;
-        GLXDrawable drawable;
-        XVisualInfo *p_vi;
-        XVisualInfo vi;
-    } neko_NativeWindowX11;
+#include "nwin/neko_window.h"
+#include "nwin/nekogl.h"
 
-    #ifdef X11_WINDOW_C
-        #include <string.h>
-        #include <unistd.h>
-        #include <X11/Xutil.h>
-        #include <X11/XKBlib.h>
-        #include <X11/Xatom.h>
-        #include <X11/cursorfont.h>
-        #include <X11/Xcursor/Xcursor.h>
-        #include <X11/extensions/Xrandr.h>
-        #include <vulkan/vulkan_xlib.h>
-        #include "nwin/x11_translation.h"
-        #include "nwin/xkb_unicode.h"
-        
-        /// Commonly used atoms used in API instance structure
-        typedef struct _neko_X11Atoms {
-            Atom WM_DELETE_WINDOW;
-            Atom _NET_WM_STATE;
-            Atom _NET_WM_STATE_FULLSCREEN;
-            Atom _NET_WM_ICON;
-            Atom _NET_WM_PID;
-        } _neko_X11Atoms;
+#ifdef WIN32_WINDOW_C
+    #include "nwin/win32_translation.h"
 
-        #define EVENT_MASK KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask | LeaveWindowMask | \
-                                   StructureNotifyMask | ClientMessage
+    static struct {
+        bool is_init;
+        ATOM main_class;
+        HINSTANCE instance;
+        neko_Cursors cursors;
+    } _neko_API = { 0 };
+#endif
 
 
-        #define VALUE_MASK CWBorderPixel | CWColormap | CWEventMask
+#define __NEKO_CLASS_NAME           "NWIN"
+#define __NEKO_WGL_PF_ATTRIB_C      40
 
+#ifdef X11_WINDOW_C
+    #include <string.h>
+    #include <unistd.h>
+    #include "nwin/x11_translation.h"
+    #include "nwin/xkb_unicode.h"
 
-        // Message type definitions
-        #define _NET_WM_STATE_REMOVE    0
-        #define _NET_WM_STATE_ADD       1
-        #define _NET_WM_STATE_TOGGLE    2
-
-        #define _NEKO_XLIB_DEFAULT_CURSOR      "dnd_none"
-        #define _NEKO_DEFAULT_WINDOW_BORDER    5
-
-        // GLX extension name macros
-        #define GLX_SWAP_CONTROL_EXT_NAME       "GLX_EXT_swap_control"
-        #define GLX_SWAP_CONTROL_SGI_NAME       "GLX_SGI_swap_control"
-        #define GLX_SWAP_CONTROL_MESA_NAME      "GLX_MESA_swap_control"
-
-        /// Structure for storing all cursor data
-        typedef struct _neko_Cursors {
-            Cursor standard;
-            Cursor waiting;
-            Cursor pointer;
-            Cursor hidden;
-        } _neko_XCursors;
-
-        typedef void(*PFN_glXSwapIntervalEXT)(Display*, GLXDrawable, int); 
-        typedef int(*PFN_glXSwapIntervalSGI)(int);
-        typedef int(*PFN_glXSwapIntervalMESA)(unsigned int);
-
-        /// Structure for containing all API specific information 
-        static struct {
-            bool is_init;
-            Display *display;
-            _neko_X11Atoms atoms;
-            Window root;
-            int32_t scr;
-            _neko_XCursors cursors;
-            PFN_glXSwapIntervalEXT glXSwapIntervalEXT;
-            PFN_glXSwapIntervalSGI glXSwapIntervalSGI;
-            PFN_glXSwapIntervalMESA glXSwapIntervalMESA;
-        } _neko_API = { 0 };
-    #endif
+    /// Structure for containing all API specific information 
+    static struct {
+        bool is_init;
+        Display *display;
+        _neko_X11Atoms atoms;
+        Window root;
+        int32_t scr;
+        _neko_XCursors cursors;
+        PFN_glXSwapIntervalEXT glXSwapIntervalEXT;
+        PFN_glXSwapIntervalSGI glXSwapIntervalSGI;
+        PFN_glXSwapIntervalMESA glXSwapIntervalMESA;
+    } _neko_API = { 0 };
 #endif
 
 #define UC_BUFFER_SIZE 32
 
-
-/// Main structure for storing information about surface window and its parameters.
-typedef struct neko_Window {
-    neko_Input input;
-    #if defined(_WIN32)
-        neko_NativeWindowWin32 win32;
-    #elif defined(__linux__)
-        neko_NativeWindowX11 x11;
-    #endif
-
-    const char *window_title;
-    int32_t cwidth;
-    int32_t cheight;
-    int32_t owidth;
-    int32_t oheight;
-    int32_t oposx;
-    int32_t oposy;
-    int32_t cposx;
-    int32_t cposy;
-    bool is_running;
-    bool resize_notify;
-    neko_Hint hints;
-    neko_CursorMode cursor_mode;
-} neko_Window;
+#include "nwin/glad/glad.h"
+#include "nwin/neko_window.h"
 
 
 #if defined(X11_WINDOW_C)
@@ -264,7 +93,6 @@ typedef struct neko_Window {
     static HICON _neko_CreateIcon(const neko_Icon* _icon);
     static DWORD _neko_HandleSizeHints(neko_Window *_win);
     static void _neko_HandleMouseMovement(neko_Window* _win, POINT _pt);
-    static void _neko_CreateGLContext(neko_Window *_win);
 #endif
 
 
@@ -297,7 +125,7 @@ LIBNWIN_API void neko_DeinitAPI();
 LIBNWIN_API neko_Window neko_NewWindow(
     int32_t _width, 
     int32_t _height,
-    neko_Hint _hints,
+    neko_SizeHint _size_hints,
     int32_t _spawn_x,
     int32_t _spawn_y,
     const char *_title
@@ -308,21 +136,17 @@ LIBNWIN_API neko_Window neko_NewWindow(
 LIBNWIN_API void neko_SetIcons(neko_Window *_win, uint32_t _count, neko_Icon *_icons);
 
 
-/// Initialise the given neko_Window instance for Vulkan surface 
-LIBNWIN_API VkResult neko_InitVkSurface(neko_Window *_win, VkInstance _ins, VkSurfaceKHR *_surface);
-
-
 /// Update window events and key arrays
 /// This function is meant to be called in every frame
 LIBNWIN_API void neko_UpdateWindow(neko_Window *_win);
 
 
 /// Set new resettable hints for neko window
-LIBNWIN_API void neko_UpdateSizeMode(neko_Window *_win, neko_Hint _hints);
+LIBNWIN_API void neko_UpdateSizeMode(neko_Window *_win, neko_SizeHint _hints);
 
 
 /// Make specified neko window the current rendering context
-LIBNWIN_API void neko_glMakeCurrent(neko_Window *_win);
+// LIBNWIN_API void neko_glMakeCurrent(neko_Window *_win);
 
 
 /// Destroy window instance and free all resources that were used

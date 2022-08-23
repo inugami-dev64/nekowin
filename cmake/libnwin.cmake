@@ -12,6 +12,8 @@ set(LIBNWIN_HEADERS
     include/nwin/nekodll.h
     include/nwin/nwin.h 
     include/nwin/gamepad.h
+	include/nwin/glad/glad.h
+	include/nwin/nekogl.h
 )
 
 set(LIBNWIN_SOURCES
@@ -22,6 +24,7 @@ set(LIBNWIN_SOURCES
 # Add platform specific sources
 if(WIN32)
     list(APPEND LIBNWIN_SOURCES 
+		src/nekowgl.c
         src/win32_gamepad.c
         src/win32_translation.c
         src/win32_window.c)

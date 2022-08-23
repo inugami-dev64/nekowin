@@ -22,15 +22,6 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(
 ) {
     except(_active_window, "_active_window value is invalid");
     switch (_msg) {
-        case WM_CREATE:
-            {
-                _active_window->win32.handle = _handle;
-                neko_Hint hints = _active_window->hints;
-                if ((hints & NEKO_HINT_API_OPENGL) == NEKO_HINT_API_OPENGL)
-                    _neko_CreateGLContext(_active_window);
-            }
-            break;
-
         case WM_CLOSE:
         case WM_DESTROY:
             _active_window->is_running = false;
@@ -110,7 +101,7 @@ static LRESULT CALLBACK _neko_Win32MessageHandler(
         case WM_SIZE:
         case WM_MOVE:
         {
-            if (!(_active_window->hints & NEKO_HINT_FULL_SCREEN)) {
+            if (_active_window->hints != NEKO_HINT_FULL_SCREEN) {
                 RECT win_rect = { 0 };
                 GetClientRect(_handle, &win_rect);
                 _active_window->cwidth = (int32_t)(win_rect.right - win_rect.left);
@@ -178,16 +169,25 @@ static DWORD _neko_HandleSizeHints(neko_Window *_win) {
     DWORD hints = 0;
 
     // Check if no window size hints were given and if so give fixed size hint
-    if (!(_win->hints & NEKO_HINT_FIXED_SIZE) && !(_win->hints & NEKO_HINT_RESIZEABLE) && !(_win->hints & NEKO_HINT_FULL_SCREEN)) {
-        _win->hints |= NEKO_HINT_FIXED_SIZE;
+    if (_win->hints == NEKO_HINT_FIXED_SIZE) {
+        _win->hints = NEKO_HINT_FIXED_SIZE;
     }
 
-    if (_win->hints & NEKO_HINT_FIXED_SIZE) {
-        hints = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
-    } else if (_win->hints & NEKO_HINT_RESIZEABLE) {
-        hints = WS_OVERLAPPEDWINDOW;
-    } else if (_win->hints & NEKO_HINT_FULL_SCREEN) {
-        hints = WS_POPUP | WS_VISIBLE;
+    switch (_win->hints) {
+        case NEKO_HINT_FIXED_SIZE:
+            hints = WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX;
+            break;
+
+        case NEKO_HINT_RESIZEABLE:
+            hints = WS_OVERLAPPEDWINDOW;
+            break;
+
+        case NEKO_HINT_FULL_SCREEN:
+            hints = WS_POPUP | WS_VISIBLE;
+            break;
+
+        default:
+            break;
     }
 
     return hints;
@@ -238,26 +238,6 @@ static void _neko_HandleMouseMovement(neko_Window* _win, POINT _pt) {
 }
 
 
-static void _neko_CreateGLContext(neko_Window *_win) {
-    PIXELFORMATDESCRIPTOR pfd = { 0 };
-    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    pfd.nVersion = 1;
-    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    pfd.iPixelType = PFD_TYPE_RGBA;
-    pfd.cColorBits = 32;
-    pfd.cDepthBits = 24;
-    pfd.cStencilBits = 8;
-    pfd.iLayerType = PFD_MAIN_PLANE;
-
-    HDC handle_to_device_context = GetDC(_win->win32.handle);
-    int px_format = ChoosePixelFormat(handle_to_device_context, &pfd);
-    SetPixelFormat(handle_to_device_context, px_format, &pfd);
-    
-    _win->win32.gl_context = _neko_API.wgl.CreateContext(handle_to_device_context);
-    except(_win->win32.gl_context, "Failed to create WGL context for OpenGL rendering");
-}
-
-
 /*******************************/
 /******* NEKO API CALLS ********/
 /*******************************/
@@ -288,13 +268,6 @@ void neko_InitAPI() {
 
     _neko_API.main_class = RegisterClassExW(&class);
     except(_neko_API.main_class, "Failed to register Win32 class");
-
-    _neko_API.wgl.CreateContext = (PFN_wglCreateContext) GetProcAddress(opengl, "wglCreateContext");
-    _neko_API.wgl.DeleteContext = (PFN_wglDeleteContext) GetProcAddress(opengl, "wglDeleteContext");
-    _neko_API.wgl.MakeCurrent = (PFN_wglMakeCurrent) GetProcAddress(opengl, "wglMakeCurrent");
-    _neko_API.wgl.GetProcAddress = (PFN_wglGetProcAddress) GetProcAddress(opengl, "wglGetProcAddress");
-    _neko_API.wgl.GetCurrentContext = (PFN_wglGetCurrentContext) GetProcAddress(opengl, "wglGetCurrentContext");
-    _neko_API.wgl.GetCurrentDC = (PFN_wglGetCurrentDC) GetProcAddress(opengl, "wglGetCurrentDC");
 }
 
 
@@ -315,7 +288,7 @@ void neko_DeinitAPI() {
 neko_Window neko_NewWindow (
     int32_t width,
     int32_t height,
-    neko_Hint hints,
+    neko_SizeHint _size_hints,
     int32_t _spawn_x,
     int32_t _spawn_y,
     const char *_title
@@ -326,8 +299,8 @@ neko_Window neko_NewWindow (
     win.cheight = (win.oheight = height);
     win.cposx = (win.oposx = _spawn_x);
     win.cposy = (win.oposy = _spawn_y);
-    win.hints = hints;
-    win.window_title = _title;
+    win.hints = _size_hints;
+    win.title = _title;
     win.input.cursor.orig_x = width / 2;
     win.input.cursor.orig_y = height / 2;
 
@@ -337,7 +310,7 @@ neko_Window neko_NewWindow (
 
     // wide title and wide icon
     wchar_t wide_title[2048] = { 0 };
-    MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, win.window_title, -1, wide_title, 2048);
+    MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, win.title, -1, wide_title, 2048);
     
     win.win32.handle = CreateWindowExW(0, WIN32_CLASS_NAME, wide_title,
                                        window_style, 
@@ -398,36 +371,11 @@ void neko_SetIcons(neko_Window* _win, uint32_t _count, neko_Icon* _icons) {
 }
 
 
-VkResult neko_InitVkSurface(neko_Window *_win, VkInstance _ins, VkSurfaceKHR *_surface) {
-    _active_window = _win;
-    VkWin32SurfaceCreateInfoKHR surface_info;
-    memset(&surface_info, 0, sizeof(surface_info));
-    surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    surface_info.hinstance = _neko_API.instance;
-    surface_info.hwnd = _win->win32.handle;
-    surface_info.pNext = NULL;
-    
-    PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
-    vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR) vkGetInstanceProcAddr(_ins, "vkCreateWin32SurfaceKHR");
-
-    VkResult res = vkCreateWin32SurfaceKHR(_ins, &surface_info, NULL, _surface);
-    _active_window = NULL;
-    return res;
-}
-
-
 /// Update window events and key arrays
 /// This function is meant to be called with every loop iteration 
 void neko_UpdateWindow(neko_Window *_win) {
     _active_window = _win;
-
-    // Find the scroll event status
     _neko_ClearReleasedInputs(&_win->input);
-
-    if(_win->hints & NEKO_HINT_API_OPENGL) {
-        HDC dc = GetDC(_win->win32.handle);
-        SwapBuffers(dc);
-    }
 
     if (!_win->is_running) {
         _active_window = NULL;
@@ -444,16 +392,12 @@ void neko_UpdateWindow(neko_Window *_win) {
 
 
 /// Set new resettable hints for neko window
-void neko_UpdateSizeMode(neko_Window *_win, neko_Hint _hints) {
+void neko_UpdateSizeMode(neko_Window *_win, neko_SizeHint _hints) {
     _active_window = _win;
-    if(_win->hints & NEKO_HINT_API_OPENGL)
-        _win->hints = _hints | NEKO_HINT_API_OPENGL;
-    else if(_win->hints & NEKO_HINT_API_VULKAN)
-        _win->hints = _hints | NEKO_HINT_API_VULKAN;
-
+    _win->hints = _hints;
     DWORD ws = _neko_HandleSizeHints(_win);
 
-    if (_win->hints & NEKO_HINT_FULL_SCREEN) {
+    if (_win->hints == NEKO_HINT_FULL_SCREEN) {
         RECT rect;
         GetWindowRect(_win->win32.handle, &rect);
         _win->owidth = rect.right - rect.left;
@@ -479,17 +423,9 @@ void neko_UpdateSizeMode(neko_Window *_win, neko_Hint _hints) {
 }
 
 
-void neko_glMakeCurrent(neko_Window* _win) {
-    HDC handle_to_device_context = GetDC(_win->win32.handle);
-    _neko_API.wgl.MakeCurrent(handle_to_device_context, _win->win32.gl_context);
-}
-
-
 /// Destroy window instance and free all resources that were used
 void neko_DestroyWindow(neko_Window *_win) {
     _active_window = _win;
-    if(_win->hints & NEKO_HINT_API_OPENGL)
-        _neko_API.wgl.DeleteContext(_win->win32.gl_context);
     DestroyWindow(_win->win32.handle);
     _active_window = NULL;
 }
