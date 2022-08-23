@@ -9,11 +9,13 @@
 typedef HGLRC(WINAPI* PFN_wglCreateContext)(HDC);
 typedef BOOL(WINAPI* PFN_wglDeleteContext)(HGLRC);
 typedef BOOL(WINAPI* PFN_wglMakeCurrent)(HDC, HGLRC);
+typedef BOOL(WINAPI* PFN_wglSwapInterval)(int);
 
 static struct {
 	PFN_wglCreateContext CreateContext;
 	PFN_wglDeleteContext DeleteContext;
 	PFN_wglMakeCurrent MakeCurrent;
+	PFN_wglSwapInterval SwapInterval;
 } wgl = { 0 };
 
 
@@ -23,6 +25,7 @@ void neko_LoadOpenGLPlatform() {
 	wgl.CreateContext = (PFN_wglCreateContext) GetProcAddress(libopengl, "wglCreateContext");
 	wgl.DeleteContext = (PFN_wglDeleteContext) GetProcAddress(libopengl, "wglDeleteContext");
 	wgl.MakeCurrent = (PFN_wglMakeCurrent) GetProcAddress(libopengl, "wglMakeCurrent");
+	wgl.SwapInterval = (PFN_wglSwapInterval)GetProcAddress(libopengl, "wglSwapInterval");
 }
 
 
@@ -67,7 +70,8 @@ void neko_LoadOpenGLFunctions() {
 
 
 void neko_SetSwapInterval(neko_Window *_win, int _interval) {
-    // please implement
+	if (wgl.SwapInterval)
+		wgl.SwapInterval(_interval);
 }
 
 

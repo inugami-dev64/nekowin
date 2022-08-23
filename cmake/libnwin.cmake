@@ -33,6 +33,7 @@ if(WIN32)
         include/nwin/win32_translation.h)
 elseif(UNIX AND NOT APPLE)
     list(APPEND LIBNWIN_HEADERS
+		include/nwin/x11_api.h
         include/nwin/x11_translation.h
         include/nwin/xkb_unicode.h)
 

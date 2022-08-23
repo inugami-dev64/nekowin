@@ -9,18 +9,19 @@
 #ifdef NEKO_GL_C
 	#include <stdint.h>
 	#include <stdbool.h>
-    #include "nwin/glad/glad.h"
 #if defined(_WIN32)
 	#include <Windows.h>
-#elif defined(__linux__)
+#endif
+	#include "nwin/glad/glad.h"
+#if defined(__linux__)
     #include <string.h>
     #include <GL/glx.h>
+	#include "nwin/x11_api.h"
 #endif	
 
 	#include "nwin/nekodll.h"
 	#include "nwin/neko_except.h"
 	#include "nwin/input.h"
-    #include "nwin/x11_api.h"
 	#include "nwin/neko_window.h"
 #endif
 
