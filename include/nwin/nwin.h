@@ -40,8 +40,6 @@ extern "C" {
 #include "nwin/nekogl.h"
 
 #ifdef WIN32_WINDOW_C
-    #include "nwin/win32_translation.h"
-
     static struct {
         bool is_init;
         ATOM main_class;
@@ -57,7 +55,6 @@ extern "C" {
 #ifdef X11_WINDOW_C
     #include <string.h>
     #include <unistd.h>
-    #include "nwin/x11_translation.h"
     #include "nwin/xkb_unicode.h"
     #include "x11_api.h"
     #include <X11/cursorfont.h>

@@ -26,21 +26,16 @@ if(WIN32)
     list(APPEND LIBNWIN_SOURCES 
 		src/nekowgl.c
         src/win32_gamepad.c
-        src/win32_translation.c
         src/win32_window.c)
 
-    list(APPEND LIBNWIN_HEADERS
-        include/nwin/win32_translation.h)
 elseif(UNIX AND NOT APPLE)
     list(APPEND LIBNWIN_HEADERS
 		include/nwin/x11_api.h
-        include/nwin/x11_translation.h
         include/nwin/xkb_unicode.h)
 
     list(APPEND LIBNWIN_SOURCES 
         src/linux_gamepad.c
         src/nekoglx.c
-        src/x11_translation.c
         src/x11_window.c
         src/xkb_unicode.c)
 elseif(APPLE)
@@ -68,27 +63,15 @@ if(NEKOWIN_BUILD_STATIC_LIB)
             PUBLIC Xcursor
             PUBLIC GL
             PUBLIC dl
-            PUBLIC vulkan
         )
         
-        if(NOT VULKAN_SDK_PATH STREQUAL "")
-            target_include_directories(${LIBNWIN_STATIC_TARGET} PUBLIC ${VULKAN_SDK_PATH}/x86_64/include)
-            target_link_directories(${LIBNWIN_STATIC_TARGET} PUBLIC ${VULKAN_SDK_PATH}/x86_64/lib)
-        endif()
-
     elseif(WIN32)
         target_link_libraries(${LIBNWIN_STATIC_TARGET}
-            PUBLIC vulkan-1
             PUBLIC gdi32
             PUBLIC kernel32
             PUBLIC Xinput
             PUBLIC Winmm
         )
-		
-		if(NOT VULKAN_SDK_PATH STREQUAL "")
-            target_include_directories(${LIBNWIN_STATIC_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Include)
-            target_link_directories(${LIBNWIN_STATIC_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Lib)
-        endif()
     endif()
 endif()
 
@@ -113,26 +96,15 @@ if(NEKOWIN_BUILD_SHARED_LIB)
             PUBLIC Xcursor
             PUBLIC GL
             PUBLIC dl
-            PUBLIC vulkan
         )
         
-        if(NOT VULKAN_SDK_PATH STREQUAL "")
-            target_include_directories(${LIBNWIN_SHARED_TARGET} PUBLIC ${VULKAN_SDK_PATH}/x86_64/include)
-            target_link_directories(${LIBNWIN_SHARED_TARGET} PUBLIC ${VULKAN_SDK_PATH}/x86_64/lib)
-        endif()
-
     elseif(WIN32)
         target_link_libraries(${LIBNWIN_SHARED_TARGET}
-            PUBLIC vulkan-1
             PUBLIC gdi32
             PUBLIC kernel32
             PUBLIC Xinput
             PUBLIC Winmm
         )
 		
-		if(NOT VULKAN_SDK_PATH STREQUAL "")
-            target_include_directories(${LIBNWIN_SHARED_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Include)
-            target_link_directories(${LIBNWIN_SHARED_TARGET} PUBLIC ${VULKAN_SDK_PATH}/Lib)
-        endif()
     endif()
 endif()

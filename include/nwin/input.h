@@ -20,7 +20,6 @@ extern "C" {
     #include <signal.h>
     #include <math.h>
 
-    #include <vulkan/vulkan.h>
     #ifdef __linux__
         #include <X11/XKBlib.h>
     #endif
@@ -270,6 +269,11 @@ typedef struct _neko_Input {
     void _neko_ClearReleasedInputs();
 #endif
 
+/// Translate platform specific keycode into neko_HidEvent keycode
+LIBNWIN_API neko_HidEvent neko_TranslateNativeKeyCode(uint32_t _code);
+
+/// Translate platform specific mouse keycode into neko_HidEvent keycode
+LIBNWIN_API neko_HidEvent neko_TranslateNativeMouseCode(uint16_t _code);
 
 /// Create new input bitmask from multiple input events
 LIBNWIN_API neko_InputBits neko_CreateInputMask(neko_HidEvent evs[8]);

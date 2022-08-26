@@ -4,8 +4,6 @@
 #include <chrono>
 #include <csignal>
 
-#include <vulkan/vulkan.h>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "nwin/stb_image.h"
 #include "nwin/nwin.h"
